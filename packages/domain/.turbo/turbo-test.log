@@ -1,0 +1,20 @@
+
+> @sprint-intelligence/domain@0.1.0 test
+> node --test dist/**/*.test.js
+
+TAP version 13
+# Subtest: domain types sanity test
+ok 1 - domain types sanity test
+  ---
+  duration_ms: 1.908872
+  type: 'test'
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 1
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 178.0454
