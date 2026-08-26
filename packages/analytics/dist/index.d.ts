@@ -37,5 +37,32 @@ export interface SprintBlockingRiskSummary {
     blockedHours: number;
     blockedTaskIds: string[];
 }
+export interface ReadyTask {
+    taskId: string;
+    taskTitle: string;
+    assigneeId?: string;
+    assigneeName?: string;
+    status: Exclude<Task['status'], 'done'>;
+    estimateHours: number;
+    dependencyIds: string[];
+}
+export interface ReadyTaskAssigneeSummary {
+    assigneeId?: string;
+    assigneeName: string;
+    taskCount: number;
+    totalHours: number;
+    taskIds: string[];
+}
+export interface SprintReadyTaskSummary {
+    readyTasks: ReadyTask[];
+    readyTaskCount: number;
+    readyHours: number;
+    readyTaskIds: string[];
+    readyUnassignedTaskCount: number;
+    readyUnassignedHours: number;
+    readyUnassignedTaskIds: string[];
+    readyByAssignee: ReadyTaskAssigneeSummary[];
+}
 export declare function calculateDeveloperWorkload(sprint: Sprint): SprintWorkloadSummary;
 export declare function calculateBlockedTaskRisks(sprint: Sprint): SprintBlockingRiskSummary;
+export declare function calculateReadyTaskSummary(sprint: Sprint): SprintReadyTaskSummary;

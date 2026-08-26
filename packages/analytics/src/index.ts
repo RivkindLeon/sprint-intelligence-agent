@@ -44,6 +44,35 @@ export interface SprintBlockingRiskSummary {
   blockedTaskIds: string[];
 }
 
+export interface ReadyTask {
+  taskId: string;
+  taskTitle: string;
+  assigneeId?: string;
+  assigneeName?: string;
+  status: Exclude<Task['status'], 'done'>;
+  estimateHours: number;
+  dependencyIds: string[];
+}
+
+export interface ReadyTaskAssigneeSummary {
+  assigneeId?: string;
+  assigneeName: string;
+  taskCount: number;
+  totalHours: number;
+  taskIds: string[];
+}
+
+export interface SprintReadyTaskSummary {
+  readyTasks: ReadyTask[];
+  readyTaskCount: number;
+  readyHours: number;
+  readyTaskIds: string[];
+  readyUnassignedTaskCount: number;
+  readyUnassignedHours: number;
+  readyUnassignedTaskIds: string[];
+  readyByAssignee: ReadyTaskAssigneeSummary[];
+}
+
 export function calculateDeveloperWorkload(sprint: Sprint): SprintWorkloadSummary {
   const tasksByAssignee = groupTasksByAssignee(sprint.tasks);
   const unassignedTasks = tasksByAssignee.get(undefined) ?? [];
@@ -92,28 +121,7 @@ export function calculateBlockedTaskRisks(sprint: Sprint): SprintBlockingRiskSum
       continue;
     }
 
-    const blockedBy: BlockingDependency[] = [];
-
-    for (const dependencyId of task.dependencies) {
-      const dependency = tasksById.get(dependencyId);
-
-      if (!dependency) {
-        blockedBy.push({
-          dependencyId,
-          dependencyStatus: 'missing'
-        });
-        continue;
-      }
-
-      if (dependency.status === 'done') {
-        continue;
-      }
-
-      blockedBy.push({
-        dependencyId,
-        dependencyStatus: dependency.status
-      });
-    }
+    const blockedBy = findBlockingDependencies(task, tasksById);
 
     if (blockedBy.length === 0) {
       continue;
@@ -134,6 +142,46 @@ export function calculateBlockedTaskRisks(sprint: Sprint): SprintBlockingRiskSum
     blockedTaskCount: risks.length,
     blockedHours: risks.reduce((sum, risk) => sum + risk.blockedHours, 0),
     blockedTaskIds: risks.map((risk) => risk.taskId)
+  };
+}
+
+export function calculateReadyTaskSummary(sprint: Sprint): SprintReadyTaskSummary {
+  const tasksById = new Map(sprint.tasks.map((task) => [task.id, task]));
+  const developersById = new Map(sprint.developers.map((developer) => [developer.id, developer]));
+  const readyTasks: ReadyTask[] = [];
+
+  for (const task of sprint.tasks) {
+    if (task.status === 'done') {
+      continue;
+    }
+
+    if (findBlockingDependencies(task, tasksById).length > 0) {
+      continue;
+    }
+
+    readyTasks.push({
+      taskId: task.id,
+      taskTitle: task.title,
+      assigneeId: task.assigneeId,
+      assigneeName: task.assigneeId ? developersById.get(task.assigneeId)?.name : undefined,
+      status: task.status,
+      estimateHours: task.estimateHours,
+      dependencyIds: [...task.dependencies]
+    });
+  }
+
+  const readyByAssignee = groupReadyTasksByAssignee(readyTasks);
+  const readyUnassignedTasks = readyTasks.filter((task) => task.assigneeId === undefined);
+
+  return {
+    readyTasks,
+    readyTaskCount: readyTasks.length,
+    readyHours: readyTasks.reduce((sum, task) => sum + task.estimateHours, 0),
+    readyTaskIds: readyTasks.map((task) => task.taskId),
+    readyUnassignedTaskCount: readyUnassignedTasks.length,
+    readyUnassignedHours: readyUnassignedTasks.reduce((sum, task) => sum + task.estimateHours, 0),
+    readyUnassignedTaskIds: readyUnassignedTasks.map((task) => task.taskId),
+    readyByAssignee
   };
 }
 
@@ -169,6 +217,62 @@ function determineStatus(assignedHours: number, capacityHours: number): Workload
   }
 
   return 'available';
+}
+
+function findBlockingDependencies(
+  task: Task,
+  tasksById: Map<string, Task>
+): BlockingDependency[] {
+  const blockedBy: BlockingDependency[] = [];
+
+  for (const dependencyId of task.dependencies) {
+    const dependency = tasksById.get(dependencyId);
+
+    if (!dependency) {
+      blockedBy.push({
+        dependencyId,
+        dependencyStatus: 'missing'
+      });
+      continue;
+    }
+
+    if (dependency.status === 'done') {
+      continue;
+    }
+
+    blockedBy.push({
+      dependencyId,
+      dependencyStatus: dependency.status
+    });
+  }
+
+  return blockedBy;
+}
+
+function groupReadyTasksByAssignee(readyTasks: ReadyTask[]): ReadyTaskAssigneeSummary[] {
+  const grouped = new Map<string | undefined, ReadyTaskAssigneeSummary>();
+
+  for (const task of readyTasks) {
+    const key = task.assigneeId;
+    const current = grouped.get(key);
+
+    if (current) {
+      current.taskCount += 1;
+      current.totalHours += task.estimateHours;
+      current.taskIds.push(task.taskId);
+      continue;
+    }
+
+    grouped.set(key, {
+      assigneeId: task.assigneeId,
+      assigneeName: task.assigneeName ?? 'Unassigned',
+      taskCount: 1,
+      totalHours: task.estimateHours,
+      taskIds: [task.taskId]
+    });
+  }
+
+  return [...grouped.values()];
 }
 
 function buildBlockingReason(blockedBy: BlockingDependency[]): string {
