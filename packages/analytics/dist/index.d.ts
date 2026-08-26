@@ -1,4 +1,4 @@
-import type { Sprint } from '@sprint-intelligence/domain';
+import type { Sprint, Task } from '@sprint-intelligence/domain';
 export type WorkloadStatus = 'available' | 'at_capacity' | 'overallocated';
 export interface DeveloperWorkload {
     developerId: string;
@@ -19,4 +19,23 @@ export interface SprintWorkloadSummary {
     totalUnassignedHours: number;
     unassignedTaskIds: string[];
 }
+export interface BlockingDependency {
+    dependencyId: string;
+    dependencyStatus: Task['status'] | 'missing';
+}
+export interface BlockedTaskRisk {
+    taskId: string;
+    taskTitle: string;
+    assigneeId?: string;
+    blockedBy: BlockingDependency[];
+    blockedHours: number;
+    reason: string;
+}
+export interface SprintBlockingRiskSummary {
+    risks: BlockedTaskRisk[];
+    blockedTaskCount: number;
+    blockedHours: number;
+    blockedTaskIds: string[];
+}
 export declare function calculateDeveloperWorkload(sprint: Sprint): SprintWorkloadSummary;
+export declare function calculateBlockedTaskRisks(sprint: Sprint): SprintBlockingRiskSummary;

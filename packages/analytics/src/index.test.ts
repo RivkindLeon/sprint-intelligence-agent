@@ -3,7 +3,7 @@ import test from 'node:test';
 
 import type { Sprint } from '@sprint-intelligence/domain';
 
-import { calculateDeveloperWorkload } from './index.js';
+import { calculateBlockedTaskRisks, calculateDeveloperWorkload } from './index.js';
 
 test('calculateDeveloperWorkload summarizes capacity, utilization, and unassigned work', () => {
   const sprint: Sprint = {
@@ -99,4 +99,75 @@ test('calculateDeveloperWorkload marks under-capacity developers as available', 
   });
   assert.strictEqual(summary.totalUnassignedHours, 0);
   assert.deepStrictEqual(summary.unassignedTaskIds, []);
+});
+
+test('calculateBlockedTaskRisks returns task-level risks with explicit dependency evidence', () => {
+  const sprint: Sprint = {
+    id: 'sprint-risk-1',
+    name: 'Dependency heavy sprint',
+    startDate: '2026-08-24',
+    endDate: '2026-08-31',
+    developers: [
+      { id: 'dev-1', name: 'Alice', capacityHoursPerWeek: 30 },
+      { id: 'dev-2', name: 'Bob', capacityHoursPerWeek: 30 }
+    ],
+    tasks: [
+      { id: 'task-1', title: 'Backend schema', assigneeId: 'dev-1', estimateHours: 10, status: 'done', dependencies: [] },
+      { id: 'task-2', title: 'API endpoint', assigneeId: 'dev-1', estimateHours: 12, status: 'in_progress', dependencies: ['task-1'] },
+      { id: 'task-3', title: 'Frontend integration', assigneeId: 'dev-2', estimateHours: 8, status: 'todo', dependencies: ['task-2'] },
+      { id: 'task-4', title: 'QA pass', estimateHours: 6, status: 'todo', dependencies: ['task-3', 'task-99'] }
+    ]
+  };
+
+  const summary = calculateBlockedTaskRisks(sprint);
+
+  assert.deepStrictEqual(summary, {
+    risks: [
+      {
+        taskId: 'task-3',
+        taskTitle: 'Frontend integration',
+        assigneeId: 'dev-2',
+        blockedBy: [{ dependencyId: 'task-2', dependencyStatus: 'in_progress' }],
+        blockedHours: 8,
+        reason: 'task-2:in_progress'
+      },
+      {
+        taskId: 'task-4',
+        taskTitle: 'QA pass',
+        assigneeId: undefined,
+        blockedBy: [
+          { dependencyId: 'task-3', dependencyStatus: 'todo' },
+          { dependencyId: 'task-99', dependencyStatus: 'missing' }
+        ],
+        blockedHours: 6,
+        reason: 'task-3:todo, task-99:missing'
+      }
+    ],
+    blockedTaskCount: 2,
+    blockedHours: 14,
+    blockedTaskIds: ['task-3', 'task-4']
+  });
+});
+
+test('calculateBlockedTaskRisks ignores completed tasks and ready work', () => {
+  const sprint: Sprint = {
+    id: 'sprint-risk-2',
+    name: 'Ready sprint',
+    startDate: '2026-08-24',
+    endDate: '2026-08-31',
+    developers: [{ id: 'dev-1', name: 'Eve', capacityHoursPerWeek: 40 }],
+    tasks: [
+      { id: 'task-1', title: 'Completed dependency', assigneeId: 'dev-1', estimateHours: 5, status: 'done', dependencies: [] },
+      { id: 'task-2', title: 'Ready follow-up', assigneeId: 'dev-1', estimateHours: 3, status: 'todo', dependencies: ['task-1'] }
+    ]
+  };
+
+  const summary = calculateBlockedTaskRisks(sprint);
+
+  assert.deepStrictEqual(summary, {
+    risks: [],
+    blockedTaskCount: 0,
+    blockedHours: 0,
+    blockedTaskIds: []
+  });
 });

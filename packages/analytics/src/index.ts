@@ -23,6 +23,27 @@ export interface SprintWorkloadSummary {
   unassignedTaskIds: string[];
 }
 
+export interface BlockingDependency {
+  dependencyId: string;
+  dependencyStatus: Task['status'] | 'missing';
+}
+
+export interface BlockedTaskRisk {
+  taskId: string;
+  taskTitle: string;
+  assigneeId?: string;
+  blockedBy: BlockingDependency[];
+  blockedHours: number;
+  reason: string;
+}
+
+export interface SprintBlockingRiskSummary {
+  risks: BlockedTaskRisk[];
+  blockedTaskCount: number;
+  blockedHours: number;
+  blockedTaskIds: string[];
+}
+
 export function calculateDeveloperWorkload(sprint: Sprint): SprintWorkloadSummary {
   const tasksByAssignee = groupTasksByAssignee(sprint.tasks);
   const unassignedTasks = tasksByAssignee.get(undefined) ?? [];
@@ -62,6 +83,60 @@ export function calculateDeveloperWorkload(sprint: Sprint): SprintWorkloadSummar
   };
 }
 
+export function calculateBlockedTaskRisks(sprint: Sprint): SprintBlockingRiskSummary {
+  const tasksById = new Map(sprint.tasks.map((task) => [task.id, task]));
+  const risks: BlockedTaskRisk[] = [];
+
+  for (const task of sprint.tasks) {
+    if (task.status === 'done') {
+      continue;
+    }
+
+    const blockedBy: BlockingDependency[] = [];
+
+    for (const dependencyId of task.dependencies) {
+      const dependency = tasksById.get(dependencyId);
+
+      if (!dependency) {
+        blockedBy.push({
+          dependencyId,
+          dependencyStatus: 'missing'
+        });
+        continue;
+      }
+
+      if (dependency.status === 'done') {
+        continue;
+      }
+
+      blockedBy.push({
+        dependencyId,
+        dependencyStatus: dependency.status
+      });
+    }
+
+    if (blockedBy.length === 0) {
+      continue;
+    }
+
+    risks.push({
+      taskId: task.id,
+      taskTitle: task.title,
+      assigneeId: task.assigneeId,
+      blockedBy,
+      blockedHours: task.estimateHours,
+      reason: buildBlockingReason(blockedBy)
+    });
+  }
+
+  return {
+    risks,
+    blockedTaskCount: risks.length,
+    blockedHours: risks.reduce((sum, risk) => sum + risk.blockedHours, 0),
+    blockedTaskIds: risks.map((risk) => risk.taskId)
+  };
+}
+
 function groupTasksByAssignee(tasks: Task[]): Map<string | undefined, Task[]> {
   const grouped = new Map<string | undefined, Task[]>();
 
@@ -94,6 +169,12 @@ function determineStatus(assignedHours: number, capacityHours: number): Workload
   }
 
   return 'available';
+}
+
+function buildBlockingReason(blockedBy: BlockingDependency[]): string {
+  return blockedBy
+    .map((dependency) => `${dependency.dependencyId}:${dependency.dependencyStatus}`)
+    .join(', ');
 }
 
 function roundToTwoDecimals(value: number): number {
