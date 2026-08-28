@@ -63,6 +63,25 @@ export interface SprintReadyTaskSummary {
     readyUnassignedTaskIds: string[];
     readyByAssignee: ReadyTaskAssigneeSummary[];
 }
+export type AllocationRiskKind = 'overallocated_developer' | 'unassigned_ready_task';
+export type AllocationRiskSeverity = 'medium' | 'high';
+export interface AllocationRisk {
+    riskId: string;
+    kind: AllocationRiskKind;
+    severity: AllocationRiskSeverity;
+    developerId?: string;
+    developerName?: string;
+    taskIds: string[];
+    hoursAtRisk: number;
+    reason: string;
+}
+export interface SprintAllocationRiskSummary {
+    risks: AllocationRisk[];
+    riskCount: number;
+    highRiskCount: number;
+    totalHoursAtRisk: number;
+}
 export declare function calculateDeveloperWorkload(sprint: Sprint): SprintWorkloadSummary;
 export declare function calculateBlockedTaskRisks(sprint: Sprint): SprintBlockingRiskSummary;
 export declare function calculateReadyTaskSummary(sprint: Sprint): SprintReadyTaskSummary;
+export declare function calculateAllocationRiskSummary(sprint: Sprint): SprintAllocationRiskSummary;
