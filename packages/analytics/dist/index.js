@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.calculateDeveloperWorkload = calculateDeveloperWorkload;
 exports.calculateBlockedTaskRisks = calculateBlockedTaskRisks;
+exports.calculateReadyTaskSummary = calculateReadyTaskSummary;
 function calculateDeveloperWorkload(sprint) {
     const tasksByAssignee = groupTasksByAssignee(sprint.tasks);
     const unassignedTasks = tasksByAssignee.get(undefined) ?? [];
@@ -43,24 +44,7 @@ function calculateBlockedTaskRisks(sprint) {
         if (task.status === 'done') {
             continue;
         }
-        const blockedBy = [];
-        for (const dependencyId of task.dependencies) {
-            const dependency = tasksById.get(dependencyId);
-            if (!dependency) {
-                blockedBy.push({
-                    dependencyId,
-                    dependencyStatus: 'missing'
-                });
-                continue;
-            }
-            if (dependency.status === 'done') {
-                continue;
-            }
-            blockedBy.push({
-                dependencyId,
-                dependencyStatus: dependency.status
-            });
-        }
+        const blockedBy = findBlockingDependencies(task, tasksById);
         if (blockedBy.length === 0) {
             continue;
         }
@@ -78,6 +62,40 @@ function calculateBlockedTaskRisks(sprint) {
         blockedTaskCount: risks.length,
         blockedHours: risks.reduce((sum, risk) => sum + risk.blockedHours, 0),
         blockedTaskIds: risks.map((risk) => risk.taskId)
+    };
+}
+function calculateReadyTaskSummary(sprint) {
+    const tasksById = new Map(sprint.tasks.map((task) => [task.id, task]));
+    const developersById = new Map(sprint.developers.map((developer) => [developer.id, developer]));
+    const readyTasks = [];
+    for (const task of sprint.tasks) {
+        if (task.status === 'done') {
+            continue;
+        }
+        if (findBlockingDependencies(task, tasksById).length > 0) {
+            continue;
+        }
+        readyTasks.push({
+            taskId: task.id,
+            taskTitle: task.title,
+            assigneeId: task.assigneeId,
+            assigneeName: task.assigneeId ? developersById.get(task.assigneeId)?.name : undefined,
+            status: task.status,
+            estimateHours: task.estimateHours,
+            dependencyIds: [...task.dependencies]
+        });
+    }
+    const readyByAssignee = groupReadyTasksByAssignee(readyTasks);
+    const readyUnassignedTasks = readyTasks.filter((task) => task.assigneeId === undefined);
+    return {
+        readyTasks,
+        readyTaskCount: readyTasks.length,
+        readyHours: readyTasks.reduce((sum, task) => sum + task.estimateHours, 0),
+        readyTaskIds: readyTasks.map((task) => task.taskId),
+        readyUnassignedTaskCount: readyUnassignedTasks.length,
+        readyUnassignedHours: readyUnassignedTasks.reduce((sum, task) => sum + task.estimateHours, 0),
+        readyUnassignedTaskIds: readyUnassignedTasks.map((task) => task.taskId),
+        readyByAssignee
     };
 }
 function groupTasksByAssignee(tasks) {
@@ -104,6 +122,48 @@ function determineStatus(assignedHours, capacityHours) {
         return 'at_capacity';
     }
     return 'available';
+}
+function findBlockingDependencies(task, tasksById) {
+    const blockedBy = [];
+    for (const dependencyId of task.dependencies) {
+        const dependency = tasksById.get(dependencyId);
+        if (!dependency) {
+            blockedBy.push({
+                dependencyId,
+                dependencyStatus: 'missing'
+            });
+            continue;
+        }
+        if (dependency.status === 'done') {
+            continue;
+        }
+        blockedBy.push({
+            dependencyId,
+            dependencyStatus: dependency.status
+        });
+    }
+    return blockedBy;
+}
+function groupReadyTasksByAssignee(readyTasks) {
+    const grouped = new Map();
+    for (const task of readyTasks) {
+        const key = task.assigneeId;
+        const current = grouped.get(key);
+        if (current) {
+            current.taskCount += 1;
+            current.totalHours += task.estimateHours;
+            current.taskIds.push(task.taskId);
+            continue;
+        }
+        grouped.set(key, {
+            assigneeId: task.assigneeId,
+            assigneeName: task.assigneeName ?? 'Unassigned',
+            taskCount: 1,
+            totalHours: task.estimateHours,
+            taskIds: [task.taskId]
+        });
+    }
+    return [...grouped.values()];
 }
 function buildBlockingReason(blockedBy) {
     return blockedBy

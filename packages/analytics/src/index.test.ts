@@ -3,7 +3,7 @@ import test from 'node:test';
 
 import type { Sprint } from '@sprint-intelligence/domain';
 
-import { calculateBlockedTaskRisks, calculateDeveloperWorkload } from './index.js';
+import { calculateBlockedTaskRisks, calculateDeveloperWorkload, calculateReadyTaskSummary } from './index.js';
 
 test('calculateDeveloperWorkload summarizes capacity, utilization, and unassigned work', () => {
   const sprint: Sprint = {
@@ -170,4 +170,109 @@ test('calculateBlockedTaskRisks ignores completed tasks and ready work', () => {
     blockedHours: 0,
     blockedTaskIds: []
   });
+});
+
+test('calculateReadyTaskSummary returns executable tasks grouped by assignee', () => {
+  const sprint: Sprint = {
+    id: 'sprint-ready-1',
+    name: 'Execution sprint',
+    startDate: '2026-08-24',
+    endDate: '2026-08-31',
+    developers: [
+      { id: 'dev-1', name: 'Alice', capacityHoursPerWeek: 30 },
+      { id: 'dev-2', name: 'Bob', capacityHoursPerWeek: 20 }
+    ],
+    tasks: [
+      { id: 'task-1', title: 'Schema', assigneeId: 'dev-1', estimateHours: 5, status: 'done', dependencies: [] },
+      { id: 'task-2', title: 'API endpoint', assigneeId: 'dev-1', estimateHours: 8, status: 'in_progress', dependencies: ['task-1'] },
+      { id: 'task-3', title: 'Frontend wiring', assigneeId: 'dev-2', estimateHours: 6, status: 'todo', dependencies: ['task-1'] },
+      { id: 'task-4', title: 'QA pass', estimateHours: 4, status: 'todo', dependencies: ['task-2'] },
+      { id: 'task-5', title: 'Release notes', estimateHours: 2, status: 'todo', dependencies: [] },
+      { id: 'task-6', title: 'Follow-up', assigneeId: 'dev-2', estimateHours: 3, status: 'todo', dependencies: ['task-99'] }
+    ]
+  };
+
+  const summary = calculateReadyTaskSummary(sprint);
+
+  assert.deepStrictEqual(summary, {
+    readyTasks: [
+      {
+        taskId: 'task-2',
+        taskTitle: 'API endpoint',
+        assigneeId: 'dev-1',
+        assigneeName: 'Alice',
+        status: 'in_progress',
+        estimateHours: 8,
+        dependencyIds: ['task-1']
+      },
+      {
+        taskId: 'task-3',
+        taskTitle: 'Frontend wiring',
+        assigneeId: 'dev-2',
+        assigneeName: 'Bob',
+        status: 'todo',
+        estimateHours: 6,
+        dependencyIds: ['task-1']
+      },
+      {
+        taskId: 'task-5',
+        taskTitle: 'Release notes',
+        assigneeId: undefined,
+        assigneeName: undefined,
+        status: 'todo',
+        estimateHours: 2,
+        dependencyIds: []
+      }
+    ],
+    readyTaskCount: 3,
+    readyHours: 16,
+    readyTaskIds: ['task-2', 'task-3', 'task-5'],
+    readyUnassignedTaskCount: 1,
+    readyUnassignedHours: 2,
+    readyUnassignedTaskIds: ['task-5'],
+    readyByAssignee: [
+      {
+        assigneeId: 'dev-1',
+        assigneeName: 'Alice',
+        taskCount: 1,
+        totalHours: 8,
+        taskIds: ['task-2']
+      },
+      {
+        assigneeId: 'dev-2',
+        assigneeName: 'Bob',
+        taskCount: 1,
+        totalHours: 6,
+        taskIds: ['task-3']
+      },
+      {
+        assigneeId: undefined,
+        assigneeName: 'Unassigned',
+        taskCount: 1,
+        totalHours: 2,
+        taskIds: ['task-5']
+      }
+    ]
+  });
+});
+
+test('calculateReadyTaskSummary ignores done tasks and blocked tasks', () => {
+  const sprint: Sprint = {
+    id: 'sprint-ready-2',
+    name: 'Blocked sprint',
+    startDate: '2026-08-24',
+    endDate: '2026-08-31',
+    developers: [],
+    tasks: [
+      { id: 'task-1', title: 'Done task', estimateHours: 1, status: 'done', dependencies: [] },
+      { id: 'task-2', title: 'Blocked task', estimateHours: 3, status: 'todo', dependencies: ['task-1', 'task-3'] },
+      { id: 'task-3', title: 'Not started dependency', estimateHours: 2, status: 'todo', dependencies: [] }
+    ]
+  };
+
+  const summary = calculateReadyTaskSummary(sprint);
+
+  assert.deepStrictEqual(summary.readyTaskIds, ['task-3']);
+  assert.strictEqual(summary.readyTaskCount, 1);
+  assert.strictEqual(summary.readyHours, 2);
 });
