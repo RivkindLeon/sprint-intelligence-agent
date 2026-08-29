@@ -465,9 +465,12 @@ export function calculateSprintProgress(
     sprintDurationDays === 0 ? 0 : roundToTwoDecimals((elapsedSprintDays / sprintDurationDays) * 100);
   const averageCompletedHoursPerElapsedDay =
     elapsedSprintDays === 0 ? 0 : roundToTwoDecimals(completedSummary.totalHours / elapsedSprintDays);
-  const projectedCompletedHoursBySprintEnd = roundToTwoDecimals(
-    averageCompletedHoursPerElapsedDay * sprintDurationDays
-  );
+  const projectedCompletedHoursBySprintEnd =
+    elapsedSprintDays === 0
+      ? 0
+      : roundToTwoDecimals(
+          (completedSummary.totalHours / elapsedSprintDays) * sprintDurationDays
+        );
   const projectedCompletionRateByHours =
     totalEstimatedHours === 0
       ? 0
