@@ -66,3 +66,34 @@ export interface SprintReadyTaskSummary {
 export declare function calculateDeveloperWorkload(sprint: Sprint): SprintWorkloadSummary;
 export declare function calculateBlockedTaskRisks(sprint: Sprint): SprintBlockingRiskSummary;
 export declare function calculateReadyTaskSummary(sprint: Sprint): SprintReadyTaskSummary;
+export interface SprintStatusSummary {
+    status: Task['status'];
+    taskCount: number;
+    totalHours: number;
+    taskIds: string[];
+}
+export interface SprintProgressSummary {
+    totalTaskCount: number;
+    totalEstimatedHours: number;
+    statusBreakdown: SprintStatusSummary[];
+    completedTaskCount: number;
+    completedHours: number;
+    inProgressTaskCount: number;
+    inProgressHours: number;
+    todoTaskCount: number;
+    todoHours: number;
+    completionRateByTasks: number;
+    completionRateByHours: number;
+    sprintDurationDays: number;
+    elapsedSprintDays: number;
+    remainingSprintDays: number;
+    elapsedSprintPercent: number;
+    averageCompletedHoursPerElapsedDay: number;
+    projectedCompletedHoursBySprintEnd: number;
+    projectedCompletionRateByHours: number;
+    isProjectedToComplete: boolean;
+}
+export interface SprintProgressOptions {
+    referenceDate?: string | Date;
+}
+export declare function calculateSprintProgress(sprint: Sprint, options?: SprintProgressOptions): SprintProgressSummary;

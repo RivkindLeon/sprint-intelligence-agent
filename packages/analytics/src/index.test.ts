@@ -3,7 +3,7 @@ import test from 'node:test';
 
 import type { Sprint } from '@sprint-intelligence/domain';
 
-import { calculateBlockedTaskRisks, calculateDeveloperWorkload, calculateReadyTaskSummary } from './index.js';
+import { calculateBlockedTaskRisks, calculateDeveloperWorkload, calculateReadyTaskSummary, calculateSprintProgress } from './index.js';
 
 test('calculateDeveloperWorkload summarizes capacity, utilization, and unassigned work', () => {
   const sprint: Sprint = {
@@ -275,4 +275,107 @@ test('calculateReadyTaskSummary ignores done tasks and blocked tasks', () => {
   assert.deepStrictEqual(summary.readyTaskIds, ['task-3']);
   assert.strictEqual(summary.readyTaskCount, 1);
   assert.strictEqual(summary.readyHours, 2);
+});
+
+test('calculateSprintProgress summarizes status mix, elapsed time, and delivery projection', () => {
+  const sprint: Sprint = {
+    id: 'sprint-progress-1',
+    name: 'Execution sprint',
+    startDate: '2026-08-24',
+    endDate: '2026-08-30',
+    developers: [
+      { id: 'dev-1', name: 'Alice', capacityHoursPerWeek: 30 },
+      { id: 'dev-2', name: 'Bob', capacityHoursPerWeek: 25 }
+    ],
+    tasks: [
+      { id: 'task-1', title: 'Foundation', assigneeId: 'dev-1', estimateHours: 8, status: 'done', dependencies: [] },
+      { id: 'task-2', title: 'API integration', assigneeId: 'dev-1', estimateHours: 10, status: 'done', dependencies: [] },
+      { id: 'task-3', title: 'Frontend wiring', assigneeId: 'dev-2', estimateHours: 6, status: 'in_progress', dependencies: [] },
+      { id: 'task-4', title: 'QA pass', assigneeId: 'dev-2', estimateHours: 4, status: 'todo', dependencies: ['task-3'] },
+      { id: 'task-5', title: 'Release notes', estimateHours: 2, status: 'todo', dependencies: [] }
+    ]
+  };
+
+  const summary = calculateSprintProgress(sprint, { referenceDate: '2026-08-26' });
+
+  assert.deepStrictEqual(summary, {
+    totalTaskCount: 5,
+    totalEstimatedHours: 30,
+    statusBreakdown: [
+      {
+        status: 'todo',
+        taskCount: 2,
+        totalHours: 6,
+        taskIds: ['task-4', 'task-5']
+      },
+      {
+        status: 'in_progress',
+        taskCount: 1,
+        totalHours: 6,
+        taskIds: ['task-3']
+      },
+      {
+        status: 'done',
+        taskCount: 2,
+        totalHours: 18,
+        taskIds: ['task-1', 'task-2']
+      }
+    ],
+    completedTaskCount: 2,
+    completedHours: 18,
+    inProgressTaskCount: 1,
+    inProgressHours: 6,
+    todoTaskCount: 2,
+    todoHours: 6,
+    completionRateByTasks: 40,
+    completionRateByHours: 60,
+    sprintDurationDays: 7,
+    elapsedSprintDays: 3,
+    remainingSprintDays: 4,
+    elapsedSprintPercent: 42.86,
+    averageCompletedHoursPerElapsedDay: 6,
+    projectedCompletedHoursBySprintEnd: 42,
+    projectedCompletionRateByHours: 140,
+    isProjectedToComplete: true
+  });
+});
+
+test('calculateSprintProgress clamps elapsed days before the sprint starts', () => {
+  const sprint: Sprint = {
+    id: 'sprint-progress-2',
+    name: 'Future sprint',
+    startDate: '2026-09-10',
+    endDate: '2026-09-16',
+    developers: [],
+    tasks: [{ id: 'task-1', title: 'Prep', estimateHours: 5, status: 'todo', dependencies: [] }]
+  };
+
+  const summary = calculateSprintProgress(sprint, { referenceDate: '2026-09-08' });
+
+  assert.strictEqual(summary.elapsedSprintDays, 0);
+  assert.strictEqual(summary.remainingSprintDays, 7);
+  assert.strictEqual(summary.elapsedSprintPercent, 0);
+  assert.strictEqual(summary.averageCompletedHoursPerElapsedDay, 0);
+  assert.strictEqual(summary.projectedCompletedHoursBySprintEnd, 0);
+  assert.strictEqual(summary.isProjectedToComplete, false);
+});
+
+test('calculateSprintProgress clamps elapsed days after the sprint ends', () => {
+  const sprint: Sprint = {
+    id: 'sprint-progress-3',
+    name: 'Finished sprint',
+    startDate: '2026-08-01',
+    endDate: '2026-08-07',
+    developers: [],
+    tasks: [{ id: 'task-1', title: 'Follow-up', estimateHours: 3, status: 'done', dependencies: [] }]
+  };
+
+  const summary = calculateSprintProgress(sprint, { referenceDate: '2026-08-20' });
+
+  assert.strictEqual(summary.elapsedSprintDays, 7);
+  assert.strictEqual(summary.remainingSprintDays, 0);
+  assert.strictEqual(summary.elapsedSprintPercent, 100);
+  assert.strictEqual(summary.projectedCompletedHoursBySprintEnd, 3.01);
+  assert.strictEqual(summary.projectedCompletionRateByHours, 100.33);
+  assert.strictEqual(summary.isProjectedToComplete, true);
 });
