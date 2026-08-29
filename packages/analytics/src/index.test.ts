@@ -452,7 +452,7 @@ test('calculateSprintProgress clamps elapsed days after the sprint ends', () => 
   assert.strictEqual(summary.elapsedSprintDays, 7);
   assert.strictEqual(summary.remainingSprintDays, 0);
   assert.strictEqual(summary.elapsedSprintPercent, 100);
-  assert.strictEqual(summary.projectedCompletedHoursBySprintEnd, 3.01);
-  assert.strictEqual(summary.projectedCompletionRateByHours, 100.33);
+  assert.strictEqual(summary.projectedCompletedHoursBySprintEnd, 3);
+  assert.strictEqual(summary.projectedCompletionRateByHours, 100);
   assert.strictEqual(summary.isProjectedToComplete, true);
 });

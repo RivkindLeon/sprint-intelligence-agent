@@ -24,3 +24,12 @@
 - Branch: `feat/ready-task-analytics`
 - Commit: feature branch head (`feat: add ready task analytics`)
 - PR: #4 `feat: add ready task analytics` (open)
+
+## 2026-08-29
+- Fixed deterministic sprint delivery projections to calculate from the full-precision completion rate instead of a prematurely rounded daily average.
+- Prevented completed sprints from reporting impossible projection artifacts such as 3.01 projected hours from exactly 3 completed hours.
+- Updated regression coverage for completed-sprint projected hours and completion percentage.
+- Validation: `npm run build`, `npm test`.
+- Branch: `feat/progress-risk-indicators`
+- Commit: feature branch head (`fix: preserve precision in sprint projections`)
+- PR: pending
