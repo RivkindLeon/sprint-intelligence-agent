@@ -331,3 +331,97 @@ const index_js_1 = require("./index.js");
         totalHoursAtRisk: 0
     });
 });
+(0, node_test_1.default)('calculateSprintProgress summarizes status mix, elapsed time, and delivery projection', () => {
+    const sprint = {
+        id: 'sprint-progress-1',
+        name: 'Execution sprint',
+        startDate: '2026-08-24',
+        endDate: '2026-08-30',
+        developers: [
+            { id: 'dev-1', name: 'Alice', capacityHoursPerWeek: 30 },
+            { id: 'dev-2', name: 'Bob', capacityHoursPerWeek: 25 }
+        ],
+        tasks: [
+            { id: 'task-1', title: 'Foundation', assigneeId: 'dev-1', estimateHours: 8, status: 'done', dependencies: [] },
+            { id: 'task-2', title: 'API integration', assigneeId: 'dev-1', estimateHours: 10, status: 'done', dependencies: [] },
+            { id: 'task-3', title: 'Frontend wiring', assigneeId: 'dev-2', estimateHours: 6, status: 'in_progress', dependencies: [] },
+            { id: 'task-4', title: 'QA pass', assigneeId: 'dev-2', estimateHours: 4, status: 'todo', dependencies: ['task-3'] },
+            { id: 'task-5', title: 'Release notes', estimateHours: 2, status: 'todo', dependencies: [] }
+        ]
+    };
+    const summary = (0, index_js_1.calculateSprintProgress)(sprint, { referenceDate: '2026-08-26' });
+    node_assert_1.default.deepStrictEqual(summary, {
+        totalTaskCount: 5,
+        totalEstimatedHours: 30,
+        statusBreakdown: [
+            {
+                status: 'todo',
+                taskCount: 2,
+                totalHours: 6,
+                taskIds: ['task-4', 'task-5']
+            },
+            {
+                status: 'in_progress',
+                taskCount: 1,
+                totalHours: 6,
+                taskIds: ['task-3']
+            },
+            {
+                status: 'done',
+                taskCount: 2,
+                totalHours: 18,
+                taskIds: ['task-1', 'task-2']
+            }
+        ],
+        completedTaskCount: 2,
+        completedHours: 18,
+        inProgressTaskCount: 1,
+        inProgressHours: 6,
+        todoTaskCount: 2,
+        todoHours: 6,
+        completionRateByTasks: 40,
+        completionRateByHours: 60,
+        sprintDurationDays: 7,
+        elapsedSprintDays: 3,
+        remainingSprintDays: 4,
+        elapsedSprintPercent: 42.86,
+        averageCompletedHoursPerElapsedDay: 6,
+        projectedCompletedHoursBySprintEnd: 42,
+        projectedCompletionRateByHours: 140,
+        isProjectedToComplete: true
+    });
+});
+(0, node_test_1.default)('calculateSprintProgress clamps elapsed days before the sprint starts', () => {
+    const sprint = {
+        id: 'sprint-progress-2',
+        name: 'Future sprint',
+        startDate: '2026-09-10',
+        endDate: '2026-09-16',
+        developers: [],
+        tasks: [{ id: 'task-1', title: 'Prep', estimateHours: 5, status: 'todo', dependencies: [] }]
+    };
+    const summary = (0, index_js_1.calculateSprintProgress)(sprint, { referenceDate: '2026-09-08' });
+    node_assert_1.default.strictEqual(summary.elapsedSprintDays, 0);
+    node_assert_1.default.strictEqual(summary.remainingSprintDays, 7);
+    node_assert_1.default.strictEqual(summary.elapsedSprintPercent, 0);
+    node_assert_1.default.strictEqual(summary.averageCompletedHoursPerElapsedDay, 0);
+    node_assert_1.default.strictEqual(summary.projectedCompletedHoursBySprintEnd, 0);
+    node_assert_1.default.strictEqual(summary.isProjectedToComplete, false);
+});
+(0, node_test_1.default)('calculateSprintProgress clamps elapsed days after the sprint ends', () => {
+    const sprint = {
+        id: 'sprint-progress-3',
+        name: 'Finished sprint',
+        startDate: '2026-08-01',
+        endDate: '2026-08-07',
+        developers: [],
+        tasks: [{ id: 'task-1', title: 'Follow-up', estimateHours: 3, status: 'done', dependencies: [] }]
+    };
+    const summary = (0, index_js_1.calculateSprintProgress)(sprint, { referenceDate: '2026-08-20' });
+    node_assert_1.default.strictEqual(summary.elapsedSprintDays, 7);
+    node_assert_1.default.strictEqual(summary.remainingSprintDays, 0);
+    node_assert_1.default.strictEqual(summary.elapsedSprintPercent, 100);
+    node_assert_1.default.strictEqual(summary.projectedCompletedHoursBySprintEnd, 3.01);
+    node_assert_1.default.strictEqual(summary.projectedCompletionRateByHours, 100.33);
+    node_assert_1.default.strictEqual(summary.isProjectedToComplete, true);
+});
