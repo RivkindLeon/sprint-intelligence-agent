@@ -3,7 +3,7 @@ import test from 'node:test';
 
 import type { Sprint } from '@sprint-intelligence/domain';
 
-import { calculateBlockedTaskRisks, calculateDeveloperWorkload, calculateReadyTaskSummary, calculateSprintProgress } from './index.js';
+import { calculateAllocationRiskSummary, calculateBlockedTaskRisks, calculateDeveloperWorkload, calculateReadyTaskSummary, calculateSprintProgress } from './index.js';
 
 test('calculateDeveloperWorkload summarizes capacity, utilization, and unassigned work', () => {
   const sprint: Sprint = {
@@ -275,6 +275,83 @@ test('calculateReadyTaskSummary ignores done tasks and blocked tasks', () => {
   assert.deepStrictEqual(summary.readyTaskIds, ['task-3']);
   assert.strictEqual(summary.readyTaskCount, 1);
   assert.strictEqual(summary.readyHours, 2);
+});
+
+test('calculateAllocationRiskSummary highlights overloaded developers and ready unassigned work', () => {
+  const sprint: Sprint = {
+    id: 'sprint-allocation-1',
+    name: 'Allocation pressure sprint',
+    startDate: '2026-08-24',
+    endDate: '2026-08-31',
+    developers: [
+      { id: 'dev-1', name: 'Alice', capacityHoursPerWeek: 20 },
+      { id: 'dev-2', name: 'Bob', capacityHoursPerWeek: 12 },
+      { id: 'dev-3', name: 'Carol', capacityHoursPerWeek: 5 }
+    ],
+    tasks: [
+      { id: 'task-1', title: 'Backend API', assigneeId: 'dev-1', estimateHours: 14, status: 'in_progress', dependencies: [] },
+      { id: 'task-2', title: 'Frontend flow', assigneeId: 'dev-1', estimateHours: 10, status: 'todo', dependencies: [] },
+      { id: 'task-3', title: 'QA pass', assigneeId: 'dev-2', estimateHours: 4, status: 'todo', dependencies: [] },
+      { id: 'task-4', title: 'Docs', estimateHours: 3, status: 'todo', dependencies: [] },
+      { id: 'task-5', title: 'Release prep', estimateHours: 7, status: 'todo', dependencies: [] }
+    ]
+  };
+
+  const summary = calculateAllocationRiskSummary(sprint);
+
+  assert.deepStrictEqual(summary, {
+    risks: [
+      {
+        riskId: 'overallocated:dev-1',
+        kind: 'overallocated_developer',
+        severity: 'medium',
+        developerId: 'dev-1',
+        developerName: 'Alice',
+        taskIds: ['task-1', 'task-2'],
+        hoursAtRisk: 4,
+        reason: 'Overallocated by 4h; ready tasks can be reassigned'
+      },
+      {
+        riskId: 'unassigned:task-4',
+        kind: 'unassigned_ready_task',
+        severity: 'medium',
+        taskIds: ['task-4'],
+        hoursAtRisk: 3,
+        reason: 'Ready but unassigned; fits dev-2, dev-3'
+      },
+      {
+        riskId: 'unassigned:task-5',
+        kind: 'unassigned_ready_task',
+        severity: 'high',
+        taskIds: ['task-5'],
+        hoursAtRisk: 7,
+        reason: 'Ready but unassigned; no developer has enough remaining capacity'
+      }
+    ],
+    riskCount: 3,
+    highRiskCount: 1,
+    totalHoursAtRisk: 14
+  });
+});
+
+test('calculateAllocationRiskSummary omits balanced sprints', () => {
+  const sprint: Sprint = {
+    id: 'sprint-allocation-2',
+    name: 'Balanced sprint',
+    startDate: '2026-08-24',
+    endDate: '2026-08-31',
+    developers: [{ id: 'dev-1', name: 'Dana', capacityHoursPerWeek: 20 }],
+    tasks: [{ id: 'task-1', title: 'Bugfix', assigneeId: 'dev-1', estimateHours: 8, status: 'todo', dependencies: [] }]
+  };
+
+  const summary = calculateAllocationRiskSummary(sprint);
+
+  assert.deepStrictEqual(summary, {
+    risks: [],
+    riskCount: 0,
+    highRiskCount: 0,
+    totalHoursAtRisk: 0
+  });
 });
 
 test('calculateSprintProgress summarizes status mix, elapsed time, and delivery projection', () => {

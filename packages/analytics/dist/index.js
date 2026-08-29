@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.calculateDeveloperWorkload = calculateDeveloperWorkload;
 exports.calculateBlockedTaskRisks = calculateBlockedTaskRisks;
 exports.calculateReadyTaskSummary = calculateReadyTaskSummary;
+exports.calculateAllocationRiskSummary = calculateAllocationRiskSummary;
 exports.calculateSprintProgress = calculateSprintProgress;
 function calculateDeveloperWorkload(sprint) {
     const tasksByAssignee = groupTasksByAssignee(sprint.tasks);
@@ -97,6 +98,66 @@ function calculateReadyTaskSummary(sprint) {
         readyUnassignedHours: readyUnassignedTasks.reduce((sum, task) => sum + task.estimateHours, 0),
         readyUnassignedTaskIds: readyUnassignedTasks.map((task) => task.taskId),
         readyByAssignee
+    };
+}
+function calculateAllocationRiskSummary(sprint) {
+    const workloadSummary = calculateDeveloperWorkload(sprint);
+    const readyTaskSummary = calculateReadyTaskSummary(sprint);
+    const risks = [];
+    for (const workload of workloadSummary.workloads) {
+        if (workload.overCapacityHours === 0) {
+            continue;
+        }
+        const readyTasksForDeveloper = readyTaskSummary.readyTasks.filter((task) => task.assigneeId === workload.developerId);
+        const evidenceTaskIds = readyTasksForDeveloper.length > 0
+            ? readyTasksForDeveloper.map((task) => task.taskId)
+            : workload.taskIds;
+        risks.push({
+            riskId: `overallocated:${workload.developerId}`,
+            kind: 'overallocated_developer',
+            severity: workload.overCapacityHours >= 8 ? 'high' : 'medium',
+            developerId: workload.developerId,
+            developerName: workload.developerName,
+            taskIds: evidenceTaskIds,
+            hoursAtRisk: workload.overCapacityHours,
+            reason: readyTasksForDeveloper.length > 0
+                ? `Overallocated by ${workload.overCapacityHours}h; ready tasks can be reassigned`
+                : `Overallocated by ${workload.overCapacityHours}h; no ready assigned tasks to rebalance`
+        });
+    }
+    const remainingCapacityByDeveloper = new Map(workloadSummary.workloads.map((workload) => [
+        workload.developerId,
+        workload.remainingCapacityHours
+    ]));
+    for (const task of readyTaskSummary.readyTasks) {
+        if (task.assigneeId !== undefined) {
+            continue;
+        }
+        const matchingDevelopers = workloadSummary.workloads.filter((workload) => {
+            const remaining = remainingCapacityByDeveloper.get(workload.developerId) ?? 0;
+            return remaining > 0 && remaining >= task.estimateHours;
+        });
+        const absorbingDeveloper = matchingDevelopers[0];
+        if (absorbingDeveloper !== undefined) {
+            const remaining = remainingCapacityByDeveloper.get(absorbingDeveloper.developerId) ?? 0;
+            remainingCapacityByDeveloper.set(absorbingDeveloper.developerId, remaining - task.estimateHours);
+        }
+        risks.push({
+            riskId: `unassigned:${task.taskId}`,
+            kind: 'unassigned_ready_task',
+            severity: matchingDevelopers.length > 0 ? 'medium' : 'high',
+            taskIds: [task.taskId],
+            hoursAtRisk: task.estimateHours,
+            reason: matchingDevelopers.length > 0
+                ? `Ready but unassigned; fits ${matchingDevelopers.map((workload) => workload.developerId).join(', ')}`
+                : 'Ready but unassigned; no developer has enough remaining capacity'
+        });
+    }
+    return {
+        risks,
+        riskCount: risks.length,
+        highRiskCount: risks.filter((risk) => risk.severity === 'high').length,
+        totalHoursAtRisk: risks.reduce((sum, risk) => sum + risk.hoursAtRisk, 0)
     };
 }
 function groupTasksByAssignee(tasks) {
