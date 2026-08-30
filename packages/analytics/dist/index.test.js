@@ -6,6 +6,41 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const node_assert_1 = __importDefault(require("node:assert"));
 const node_test_1 = __importDefault(require("node:test"));
 const index_js_1 = require("./index.js");
+(0, node_test_1.default)('calculateDependencyCycleRisks reports cycles with issue and dependency evidence', () => {
+    const sprint = {
+        id: 'sprint-cycles', name: 'Cycle audit', startDate: '2026-08-24', endDate: '2026-08-31', developers: [],
+        tasks: [
+            { id: 'task-a', title: 'API', estimateHours: 5, status: 'todo', dependencies: ['task-b'] },
+            { id: 'task-b', title: 'Schema', estimateHours: 3, status: 'in_progress', dependencies: ['task-a'] },
+            { id: 'task-c', title: 'Docs', estimateHours: 2, status: 'todo', dependencies: ['task-c'] },
+            { id: 'task-d', title: 'Deploy', estimateHours: 4, status: 'todo', dependencies: ['task-a', 'missing'] }
+        ]
+    };
+    node_assert_1.default.deepStrictEqual((0, index_js_1.calculateDependencyCycleRisks)(sprint), {
+        risks: [
+            { riskId: 'dependency-cycle:task-a:task-b', taskIds: ['task-a', 'task-b'], dependencyEdges: [
+                    { taskId: 'task-a', dependencyId: 'task-b' }, { taskId: 'task-b', dependencyId: 'task-a' }
+                ], hoursAtRisk: 8, reason: 'task-a->task-b, task-b->task-a' },
+            { riskId: 'dependency-cycle:task-c', taskIds: ['task-c'], dependencyEdges: [
+                    { taskId: 'task-c', dependencyId: 'task-c' }
+                ], hoursAtRisk: 2, reason: 'task-c->task-c' }
+        ],
+        cycleCount: 2, affectedTaskCount: 3, affectedTaskIds: ['task-a', 'task-b', 'task-c'], totalHoursAtRisk: 10
+    });
+});
+(0, node_test_1.default)('calculateDependencyCycleRisks ignores acyclic and missing dependencies', () => {
+    const sprint = {
+        id: 'sprint-acyclic', name: 'Healthy graph', startDate: '2026-08-24', endDate: '2026-08-31', developers: [],
+        tasks: [
+            { id: 'task-a', title: 'Schema', estimateHours: 3, status: 'done', dependencies: [] },
+            { id: 'task-b', title: 'API', estimateHours: 5, status: 'todo', dependencies: ['task-a'] },
+            { id: 'task-c', title: 'UI', estimateHours: 4, status: 'todo', dependencies: ['missing'] }
+        ]
+    };
+    node_assert_1.default.deepStrictEqual((0, index_js_1.calculateDependencyCycleRisks)(sprint), {
+        risks: [], cycleCount: 0, affectedTaskCount: 0, affectedTaskIds: [], totalHoursAtRisk: 0
+    });
+});
 (0, node_test_1.default)('calculateDeveloperWorkload summarizes capacity, utilization, and unassigned work', () => {
     const sprint = {
         id: 'sprint-42',

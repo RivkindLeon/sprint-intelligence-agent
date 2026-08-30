@@ -37,6 +37,23 @@ export interface SprintBlockingRiskSummary {
     blockedHours: number;
     blockedTaskIds: string[];
 }
+export interface DependencyCycleRisk {
+    riskId: string;
+    taskIds: string[];
+    dependencyEdges: Array<{
+        taskId: string;
+        dependencyId: string;
+    }>;
+    hoursAtRisk: number;
+    reason: string;
+}
+export interface SprintDependencyCycleRiskSummary {
+    risks: DependencyCycleRisk[];
+    cycleCount: number;
+    affectedTaskCount: number;
+    affectedTaskIds: string[];
+    totalHoursAtRisk: number;
+}
 export interface ReadyTask {
     taskId: string;
     taskTitle: string;
@@ -83,6 +100,7 @@ export interface SprintAllocationRiskSummary {
 }
 export declare function calculateDeveloperWorkload(sprint: Sprint): SprintWorkloadSummary;
 export declare function calculateBlockedTaskRisks(sprint: Sprint): SprintBlockingRiskSummary;
+export declare function calculateDependencyCycleRisks(sprint: Sprint): SprintDependencyCycleRiskSummary;
 export declare function calculateReadyTaskSummary(sprint: Sprint): SprintReadyTaskSummary;
 export declare function calculateAllocationRiskSummary(sprint: Sprint): SprintAllocationRiskSummary;
 export interface SprintStatusSummary {
