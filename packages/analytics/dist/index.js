@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.calculateDeveloperWorkload = calculateDeveloperWorkload;
 exports.calculateBlockedTaskRisks = calculateBlockedTaskRisks;
+exports.calculateDependencyCycleRisks = calculateDependencyCycleRisks;
 exports.calculateReadyTaskSummary = calculateReadyTaskSummary;
 exports.calculateAllocationRiskSummary = calculateAllocationRiskSummary;
 exports.calculateSprintProgress = calculateSprintProgress;
@@ -64,6 +65,70 @@ function calculateBlockedTaskRisks(sprint) {
         blockedTaskCount: risks.length,
         blockedHours: risks.reduce((sum, risk) => sum + risk.blockedHours, 0),
         blockedTaskIds: risks.map((risk) => risk.taskId)
+    };
+}
+function calculateDependencyCycleRisks(sprint) {
+    const tasksById = new Map(sprint.tasks.map((task) => [task.id, task]));
+    const indexById = new Map();
+    const lowLinkById = new Map();
+    const stack = [];
+    const onStack = new Set();
+    const cycles = [];
+    let nextIndex = 0;
+    const visit = (taskId) => {
+        indexById.set(taskId, nextIndex);
+        lowLinkById.set(taskId, nextIndex++);
+        stack.push(taskId);
+        onStack.add(taskId);
+        for (const dependencyId of tasksById.get(taskId).dependencies) {
+            if (!tasksById.has(dependencyId))
+                continue;
+            if (!indexById.has(dependencyId)) {
+                visit(dependencyId);
+                lowLinkById.set(taskId, Math.min(lowLinkById.get(taskId), lowLinkById.get(dependencyId)));
+            }
+            else if (onStack.has(dependencyId)) {
+                lowLinkById.set(taskId, Math.min(lowLinkById.get(taskId), indexById.get(dependencyId)));
+            }
+        }
+        if (lowLinkById.get(taskId) !== indexById.get(taskId))
+            return;
+        const component = [];
+        let member;
+        do {
+            member = stack.pop();
+            onStack.delete(member);
+            component.push(member);
+        } while (member !== taskId);
+        const selfCycle = component.length === 1 && tasksById.get(component[0]).dependencies.includes(component[0]);
+        if (component.length > 1 || selfCycle)
+            cycles.push(component);
+    };
+    for (const task of sprint.tasks)
+        if (!indexById.has(task.id))
+            visit(task.id);
+    const taskOrder = new Map(sprint.tasks.map((task, index) => [task.id, index]));
+    const risks = cycles.map((component) => {
+        const taskIds = component.sort((a, b) => taskOrder.get(a) - taskOrder.get(b));
+        const cycleIds = new Set(taskIds);
+        const dependencyEdges = taskIds.flatMap((taskId) => tasksById.get(taskId).dependencies
+            .filter((dependencyId) => cycleIds.has(dependencyId))
+            .map((dependencyId) => ({ taskId, dependencyId })));
+        return {
+            riskId: `dependency-cycle:${taskIds.join(':')}`,
+            taskIds,
+            dependencyEdges,
+            hoursAtRisk: taskIds.reduce((sum, id) => sum + tasksById.get(id).estimateHours, 0),
+            reason: dependencyEdges.map(({ taskId, dependencyId }) => `${taskId}->${dependencyId}`).join(', ')
+        };
+    }).sort((a, b) => taskOrder.get(a.taskIds[0]) - taskOrder.get(b.taskIds[0]));
+    const affectedTaskIds = risks.flatMap((risk) => risk.taskIds);
+    return {
+        risks,
+        cycleCount: risks.length,
+        affectedTaskCount: affectedTaskIds.length,
+        affectedTaskIds,
+        totalHoursAtRisk: risks.reduce((sum, risk) => sum + risk.hoursAtRisk, 0)
     };
 }
 function calculateReadyTaskSummary(sprint) {

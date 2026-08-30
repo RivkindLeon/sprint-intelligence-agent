@@ -33,3 +33,12 @@
 - Branch: `feat/progress-risk-indicators`
 - Commit: feature branch head (`fix: preserve precision in sprint projections`)
 - PR: pending
+
+## 2026-08-30
+- Added deterministic `calculateDependencyCycleRisks()` analytics to detect circular task dependencies that cannot resolve through normal sprint execution.
+- Each risk includes the affected task IDs, exact dependency edges, and estimated hours at risk so downstream AI conclusions can cite concrete issue/dependency evidence.
+- Covered multi-task cycles, self-dependencies, acyclic graphs, and missing dependencies with automated tests.
+- Validation: `npm test`, `npm run build`, `npm run lint` (no package lint tasks configured).
+- Branch: `feat/dependency-cycle-risks`
+- Commit: `09096da` (`feat: detect sprint dependency cycles`)
+- PR: #8 `feat: detect sprint dependency cycles` (open)
