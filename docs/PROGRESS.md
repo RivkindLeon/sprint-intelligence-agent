@@ -29,6 +29,22 @@ Last verified against the code: 2026-08-31.
 Also missing from section 4 of the brief: `packages/ai`, `packages/shared`,
 `demo/`, `docs/`, `.env.example`. `README.md` is 28 bytes.
 
+## Milestone 0.5 — Continuous Integration
+
+**Status: complete.**
+
+`.github/workflows/ci.yml` runs on every pull request and on every push to
+`main`: `npm ci`, `npm run build`, `npm run test` across the turbo workspace.
+
+Registered as a required status check on `main`. A red build now blocks the
+merge instead of depending on the session's own judgement.
+
+Not yet included: linting, formatting and type checking. `turbo.json` declares a
+`lint` pipeline but no package defines a `lint` script, so there is nothing to
+run yet. Wire it up when a linter is actually added.
+
+**Before merging anything, read "If CI fails" in the brief.**
+
 ## Milestone 1 — Domain + Demo
 
 **Status: not started.** `packages/domain` holds a small set of types. There is
