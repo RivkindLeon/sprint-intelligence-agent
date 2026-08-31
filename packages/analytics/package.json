@@ -8,7 +8,7 @@
     "test": "node --test dist/**/*.test.js"
   },
   "dependencies": {
-    "@sprint-intelligence/domain": "0.1.0"
+    "@sprint-intelligence/domain": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",

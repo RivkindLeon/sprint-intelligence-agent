@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.turbo/
+
+# Local configuration and private development notes
+.env
+.env.local

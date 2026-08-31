@@ -2,10 +2,7 @@
   "name": "sprint-intelligence-agent",
   "version": "0.1.0",
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
+  "packageManager": "pnpm@11.0.0",
   "scripts": {
     "build": "turbo run build",
     "test": "turbo run test",
