@@ -32,7 +32,7 @@
 - Validation: `npm run build`, `npm test`.
 - Branch: `feat/progress-risk-indicators`
 - Commit: feature branch head (`fix: preserve precision in sprint projections`)
-- PR: pending
+- PR: #9 `chore: standardize workspace on pnpm` (open)
 
 ## 2026-08-30
 - Added deterministic `calculateDependencyCycleRisks()` analytics to detect circular task dependencies that cannot resolve through normal sprint execution.
@@ -42,3 +42,13 @@
 - Branch: `feat/dependency-cycle-risks`
 - Commit: `09096da` (`feat: detect sprint dependency cycles`)
 - PR: #8 `feat: detect sprint dependency cycles` (open)
+
+## 2026-08-31
+- Standardized Milestone 0's workspace on pnpm, including a workspace manifest, pinned package manager, lockfile, and workspace protocol for internal dependencies.
+- Updated CI to install with the frozen pnpm lockfile and run the existing build and test suite through pnpm.
+- Stopped versioning generated `node_modules`, build output, and turbo caches; these remain reproducible from source and the lockfile.
+- Corrected `docs/PROGRESS.md` to direct the next session to the earliest incomplete milestone instead of skipping ahead to analytics.
+- Validation: `pnpm install --frozen-lockfile`, `pnpm build`, `pnpm test` (13 analytics tests and 1 domain test passing).
+- Branch: `chore/m0-pnpm-workspace`
+- Commit: feature branch head (`chore: standardize workspace on pnpm`)
+- PR: pending

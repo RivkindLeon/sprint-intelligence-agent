@@ -17,9 +17,9 @@ Last verified against the code: 2026-08-31.
 
 | Required | State |
 |---|---|
-| Workspace | done — npm workspaces + turbo (brief specifies pnpm) |
+| Workspace | done — pnpm workspace + turbo; generated dependencies, builds, and turbo caches are ignored |
 | Shared types | partial — `packages/domain` is 29 lines of types |
-| Tests | done — Vitest-style unit tests on analytics, passing |
+| Tests | done — Node test runner unit tests on analytics, passing |
 | Frontend | **not done** — `apps/` does not exist |
 | Backend | **not done** — `apps/` does not exist |
 | PostgreSQL | **not done** |
@@ -34,7 +34,7 @@ Also missing from section 4 of the brief: `packages/ai`, `packages/shared`,
 **Status: complete.**
 
 `.github/workflows/ci.yml` runs on every pull request and on every push to
-`main`: `npm ci`, `npm run build`, `npm run test` across the turbo workspace.
+`main`: frozen pnpm install, build, and test across the turbo workspace.
 
 Registered as a required status check on `main`. A red build now blocks the
 merge instead of depending on the session's own judgement.
@@ -106,14 +106,11 @@ Milestone 1 are largely untouched. Analytics functions are pure and easy to add
 with no infrastructure, which is why they kept getting chosen — but the brief is
 explicit in section 21 that work should proceed milestone by milestone.
 
-Two defensible paths, in order of preference:
-
-1. **Close Milestone 2 first**, since it is already half done. Add the six
-   missing functions listed above with unit tests. This is a small, bounded
-   piece of work.
-2. **Then go back and finish Milestone 0 and 1**: `apps/api` with Fastify,
-   PostgreSQL via Drizzle, `docker-compose.yml`, `.env.example`, and the
-   synthetic demo dataset with a seed command.
+Continue with the earliest incomplete milestone. **Finish Milestone 0 next**:
+add `apps/api` with Fastify, `apps/web` with React/Vite, PostgreSQL via Drizzle,
+`docker-compose.yml`, `.env.example`, `packages/shared`, and linting/formatting.
+Then complete Milestone 1's domain model, synthetic demo dataset, and seed
+command before returning to the remaining Milestone 2 analytics.
 
 Do not start Milestone 3 (AI tools) before the demo dataset exists — there
 would be nothing for the tools to read.
