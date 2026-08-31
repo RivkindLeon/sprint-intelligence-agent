@@ -595,6 +595,43 @@ Create:
 
 Commit.
 
+## Milestone 0.5 — Continuous Integration
+
+Earlier versions of this brief assumed CI already existed. It did not. Nightly
+sessions merged their own pull requests with no automated verification at all.
+
+Required:
+
+- a workflow running on every pull request and on pushes to `main`;
+- install, build where applicable, and the full non-GPU test suite;
+- no large model downloads — ordinary CI must stay fast and free;
+- the workflow registered as a required status check on `main`, so a red build
+  blocks the merge instead of depending on the agent's own judgement.
+
+A minimal workflow already exists at `.github/workflows/ci.yml`. Extending it
+with linting, formatting and type checking belongs to this milestone, and
+should happen when those tools are actually introduced — not before.
+
+### If CI fails
+
+This applies to every session, not only to this milestone.
+
+1. **Do not merge.** A red build is never "clearly safe".
+2. **Try to fix it in the same session** — but only if your own change caused
+   it. Read the failing job's log, fix the cause, push to the same branch.
+3. **If the failure is not yours** — `main` was already red when you started —
+   stop feature work. Repairing `main` becomes the session's task, because
+   every following session is blocked until it is green.
+4. **If you cannot fix it**, leave the pull request open, do not open a second
+   one, and write plainly in `docs/PROGRESS.md` and the daily work log what is
+   broken and what you tried. The next session must begin by reading that and
+   finishing the repair, not by starting something new.
+5. **Never disable, skip, or weaken a test to make the build pass.** Deleting a
+   failing assertion is not a fix; it hides the defect from every future
+   session and from you.
+
+---
+
 ## Milestone 1 — Domain + Demo
 
 Implement domain model and synthetic dataset.
