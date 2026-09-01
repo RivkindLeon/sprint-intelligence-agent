@@ -304,12 +304,7 @@ type SprintAnalysis = {
   risks: Array<{
     severity: "low" | "medium" | "high" | "critical";
     category:
-      | "capacity"
-      | "dependency"
-      | "scope"
-      | "blocker"
-      | "quality"
-      | "delivery";
+      "capacity" | "dependency" | "scope" | "blocker" | "quality" | "delivery";
 
     title: string;
     explanation: string;

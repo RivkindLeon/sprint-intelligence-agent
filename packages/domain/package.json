@@ -5,7 +5,8 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "test": "node --test dist/**/*.test.js"
+    "test": "node --test dist/**/*.test.js",
+    "lint": "eslint src --max-warnings 0"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",

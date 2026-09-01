@@ -1,6 +1,6 @@
-import type { Sprint, Task } from '@sprint-intelligence/domain';
+import type { Sprint, Task } from "@sprint-intelligence/domain";
 
-export type WorkloadStatus = 'available' | 'at_capacity' | 'overallocated';
+export type WorkloadStatus = "available" | "at_capacity" | "overallocated";
 
 export interface DeveloperWorkload {
   developerId: string;
@@ -25,7 +25,7 @@ export interface SprintWorkloadSummary {
 
 export interface BlockingDependency {
   dependencyId: string;
-  dependencyStatus: Task['status'] | 'missing';
+  dependencyStatus: Task["status"] | "missing";
 }
 
 export interface BlockedTaskRisk {
@@ -65,7 +65,7 @@ export interface ReadyTask {
   taskTitle: string;
   assigneeId?: string;
   assigneeName?: string;
-  status: Exclude<Task['status'], 'done'>;
+  status: Exclude<Task["status"], "done">;
   estimateHours: number;
   dependencyIds: string[];
 }
@@ -89,9 +89,10 @@ export interface SprintReadyTaskSummary {
   readyByAssignee: ReadyTaskAssigneeSummary[];
 }
 
-export type AllocationRiskKind = 'overallocated_developer' | 'unassigned_ready_task';
+export type AllocationRiskKind =
+  "overallocated_developer" | "unassigned_ready_task";
 
-export type AllocationRiskSeverity = 'medium' | 'high';
+export type AllocationRiskSeverity = "medium" | "high";
 
 export interface AllocationRisk {
   riskId: string;
@@ -111,21 +112,29 @@ export interface SprintAllocationRiskSummary {
   totalHoursAtRisk: number;
 }
 
-export function calculateDeveloperWorkload(sprint: Sprint): SprintWorkloadSummary {
+export function calculateDeveloperWorkload(
+  sprint: Sprint,
+): SprintWorkloadSummary {
   const tasksByAssignee = groupTasksByAssignee(sprint.tasks);
   const unassignedTasks = tasksByAssignee.get(undefined) ?? [];
 
   const workloads = sprint.developers.map((developer) => {
     const assignedTasks = tasksByAssignee.get(developer.id) ?? [];
     const assignedHours = sumTaskHours(assignedTasks);
-    const remainingCapacityHours = developer.capacityHoursPerWeek - assignedHours;
-    const overCapacityHours = Math.max(assignedHours - developer.capacityHoursPerWeek, 0);
+    const remainingCapacityHours =
+      developer.capacityHoursPerWeek - assignedHours;
+    const overCapacityHours = Math.max(
+      assignedHours - developer.capacityHoursPerWeek,
+      0,
+    );
     const utilizationPercent =
       developer.capacityHoursPerWeek === 0
         ? assignedHours > 0
           ? 100
           : 0
-        : roundToTwoDecimals((assignedHours / developer.capacityHoursPerWeek) * 100);
+        : roundToTwoDecimals(
+            (assignedHours / developer.capacityHoursPerWeek) * 100,
+          );
 
     return {
       developerId: developer.id,
@@ -137,25 +146,33 @@ export function calculateDeveloperWorkload(sprint: Sprint): SprintWorkloadSummar
       remainingCapacityHours,
       overCapacityHours,
       utilizationPercent,
-      status: determineStatus(assignedHours, developer.capacityHoursPerWeek)
+      status: determineStatus(assignedHours, developer.capacityHoursPerWeek),
     } satisfies DeveloperWorkload;
   });
 
   return {
     workloads,
-    totalCapacityHours: sprint.developers.reduce((sum, developer) => sum + developer.capacityHoursPerWeek, 0),
-    totalAssignedHours: sprint.tasks.reduce((sum, task) => sum + task.estimateHours, 0),
+    totalCapacityHours: sprint.developers.reduce(
+      (sum, developer) => sum + developer.capacityHoursPerWeek,
+      0,
+    ),
+    totalAssignedHours: sprint.tasks.reduce(
+      (sum, task) => sum + task.estimateHours,
+      0,
+    ),
     totalUnassignedHours: sumTaskHours(unassignedTasks),
-    unassignedTaskIds: unassignedTasks.map((task) => task.id)
+    unassignedTaskIds: unassignedTasks.map((task) => task.id),
   };
 }
 
-export function calculateBlockedTaskRisks(sprint: Sprint): SprintBlockingRiskSummary {
+export function calculateBlockedTaskRisks(
+  sprint: Sprint,
+): SprintBlockingRiskSummary {
   const tasksById = new Map(sprint.tasks.map((task) => [task.id, task]));
   const risks: BlockedTaskRisk[] = [];
 
   for (const task of sprint.tasks) {
-    if (task.status === 'done') {
+    if (task.status === "done") {
       continue;
     }
 
@@ -171,7 +188,7 @@ export function calculateBlockedTaskRisks(sprint: Sprint): SprintBlockingRiskSum
       assigneeId: task.assigneeId,
       blockedBy,
       blockedHours: task.estimateHours,
-      reason: buildBlockingReason(blockedBy)
+      reason: buildBlockingReason(blockedBy),
     });
   }
 
@@ -179,11 +196,13 @@ export function calculateBlockedTaskRisks(sprint: Sprint): SprintBlockingRiskSum
     risks,
     blockedTaskCount: risks.length,
     blockedHours: risks.reduce((sum, risk) => sum + risk.blockedHours, 0),
-    blockedTaskIds: risks.map((risk) => risk.taskId)
+    blockedTaskIds: risks.map((risk) => risk.taskId),
   };
 }
 
-export function calculateDependencyCycleRisks(sprint: Sprint): SprintDependencyCycleRiskSummary {
+export function calculateDependencyCycleRisks(
+  sprint: Sprint,
+): SprintDependencyCycleRiskSummary {
   const tasksById = new Map(sprint.tasks.map((task) => [task.id, task]));
   const indexById = new Map<string, number>();
   const lowLinkById = new Map<string, number>();
@@ -202,9 +221,15 @@ export function calculateDependencyCycleRisks(sprint: Sprint): SprintDependencyC
       if (!tasksById.has(dependencyId)) continue;
       if (!indexById.has(dependencyId)) {
         visit(dependencyId);
-        lowLinkById.set(taskId, Math.min(lowLinkById.get(taskId)!, lowLinkById.get(dependencyId)!));
+        lowLinkById.set(
+          taskId,
+          Math.min(lowLinkById.get(taskId)!, lowLinkById.get(dependencyId)!),
+        );
       } else if (onStack.has(dependencyId)) {
-        lowLinkById.set(taskId, Math.min(lowLinkById.get(taskId)!, indexById.get(dependencyId)!));
+        lowLinkById.set(
+          taskId,
+          Math.min(lowLinkById.get(taskId)!, indexById.get(dependencyId)!),
+        );
       }
     }
 
@@ -216,27 +241,45 @@ export function calculateDependencyCycleRisks(sprint: Sprint): SprintDependencyC
       onStack.delete(member);
       component.push(member);
     } while (member !== taskId);
-    const selfCycle = component.length === 1 && tasksById.get(component[0])!.dependencies.includes(component[0]);
+    const selfCycle =
+      component.length === 1 &&
+      tasksById.get(component[0])!.dependencies.includes(component[0]);
     if (component.length > 1 || selfCycle) cycles.push(component);
   };
 
   for (const task of sprint.tasks) if (!indexById.has(task.id)) visit(task.id);
 
-  const taskOrder = new Map(sprint.tasks.map((task, index) => [task.id, index]));
-  const risks = cycles.map((component) => {
-    const taskIds = component.sort((a, b) => taskOrder.get(a)! - taskOrder.get(b)!);
-    const cycleIds = new Set(taskIds);
-    const dependencyEdges = taskIds.flatMap((taskId) => tasksById.get(taskId)!.dependencies
-      .filter((dependencyId) => cycleIds.has(dependencyId))
-      .map((dependencyId) => ({ taskId, dependencyId })));
-    return {
-      riskId: `dependency-cycle:${taskIds.join(':')}`,
-      taskIds,
-      dependencyEdges,
-      hoursAtRisk: taskIds.reduce((sum, id) => sum + tasksById.get(id)!.estimateHours, 0),
-      reason: dependencyEdges.map(({ taskId, dependencyId }) => `${taskId}->${dependencyId}`).join(', ')
-    } satisfies DependencyCycleRisk;
-  }).sort((a, b) => taskOrder.get(a.taskIds[0])! - taskOrder.get(b.taskIds[0])!);
+  const taskOrder = new Map(
+    sprint.tasks.map((task, index) => [task.id, index]),
+  );
+  const risks = cycles
+    .map((component) => {
+      const taskIds = component.sort(
+        (a, b) => taskOrder.get(a)! - taskOrder.get(b)!,
+      );
+      const cycleIds = new Set(taskIds);
+      const dependencyEdges = taskIds.flatMap((taskId) =>
+        tasksById
+          .get(taskId)!
+          .dependencies.filter((dependencyId) => cycleIds.has(dependencyId))
+          .map((dependencyId) => ({ taskId, dependencyId })),
+      );
+      return {
+        riskId: `dependency-cycle:${taskIds.join(":")}`,
+        taskIds,
+        dependencyEdges,
+        hoursAtRisk: taskIds.reduce(
+          (sum, id) => sum + tasksById.get(id)!.estimateHours,
+          0,
+        ),
+        reason: dependencyEdges
+          .map(({ taskId, dependencyId }) => `${taskId}->${dependencyId}`)
+          .join(", "),
+      } satisfies DependencyCycleRisk;
+    })
+    .sort(
+      (a, b) => taskOrder.get(a.taskIds[0])! - taskOrder.get(b.taskIds[0])!,
+    );
   const affectedTaskIds = risks.flatMap((risk) => risk.taskIds);
 
   return {
@@ -244,17 +287,21 @@ export function calculateDependencyCycleRisks(sprint: Sprint): SprintDependencyC
     cycleCount: risks.length,
     affectedTaskCount: affectedTaskIds.length,
     affectedTaskIds,
-    totalHoursAtRisk: risks.reduce((sum, risk) => sum + risk.hoursAtRisk, 0)
+    totalHoursAtRisk: risks.reduce((sum, risk) => sum + risk.hoursAtRisk, 0),
   };
 }
 
-export function calculateReadyTaskSummary(sprint: Sprint): SprintReadyTaskSummary {
+export function calculateReadyTaskSummary(
+  sprint: Sprint,
+): SprintReadyTaskSummary {
   const tasksById = new Map(sprint.tasks.map((task) => [task.id, task]));
-  const developersById = new Map(sprint.developers.map((developer) => [developer.id, developer]));
+  const developersById = new Map(
+    sprint.developers.map((developer) => [developer.id, developer]),
+  );
   const readyTasks: ReadyTask[] = [];
 
   for (const task of sprint.tasks) {
-    if (task.status === 'done') {
+    if (task.status === "done") {
       continue;
     }
 
@@ -266,15 +313,19 @@ export function calculateReadyTaskSummary(sprint: Sprint): SprintReadyTaskSummar
       taskId: task.id,
       taskTitle: task.title,
       assigneeId: task.assigneeId,
-      assigneeName: task.assigneeId ? developersById.get(task.assigneeId)?.name : undefined,
+      assigneeName: task.assigneeId
+        ? developersById.get(task.assigneeId)?.name
+        : undefined,
       status: task.status,
       estimateHours: task.estimateHours,
-      dependencyIds: [...task.dependencies]
+      dependencyIds: [...task.dependencies],
     });
   }
 
   const readyByAssignee = groupReadyTasksByAssignee(readyTasks);
-  const readyUnassignedTasks = readyTasks.filter((task) => task.assigneeId === undefined);
+  const readyUnassignedTasks = readyTasks.filter(
+    (task) => task.assigneeId === undefined,
+  );
 
   return {
     readyTasks,
@@ -282,13 +333,18 @@ export function calculateReadyTaskSummary(sprint: Sprint): SprintReadyTaskSummar
     readyHours: readyTasks.reduce((sum, task) => sum + task.estimateHours, 0),
     readyTaskIds: readyTasks.map((task) => task.taskId),
     readyUnassignedTaskCount: readyUnassignedTasks.length,
-    readyUnassignedHours: readyUnassignedTasks.reduce((sum, task) => sum + task.estimateHours, 0),
+    readyUnassignedHours: readyUnassignedTasks.reduce(
+      (sum, task) => sum + task.estimateHours,
+      0,
+    ),
     readyUnassignedTaskIds: readyUnassignedTasks.map((task) => task.taskId),
-    readyByAssignee
+    readyByAssignee,
   };
 }
 
-export function calculateAllocationRiskSummary(sprint: Sprint): SprintAllocationRiskSummary {
+export function calculateAllocationRiskSummary(
+  sprint: Sprint,
+): SprintAllocationRiskSummary {
   const workloadSummary = calculateDeveloperWorkload(sprint);
   const readyTaskSummary = calculateReadyTaskSummary(sprint);
   const risks: AllocationRisk[] = [];
@@ -299,7 +355,7 @@ export function calculateAllocationRiskSummary(sprint: Sprint): SprintAllocation
     }
 
     const readyTasksForDeveloper = readyTaskSummary.readyTasks.filter(
-      (task) => task.assigneeId === workload.developerId
+      (task) => task.assigneeId === workload.developerId,
     );
     const evidenceTaskIds =
       readyTasksForDeveloper.length > 0
@@ -308,8 +364,8 @@ export function calculateAllocationRiskSummary(sprint: Sprint): SprintAllocation
 
     risks.push({
       riskId: `overallocated:${workload.developerId}`,
-      kind: 'overallocated_developer',
-      severity: workload.overCapacityHours >= 8 ? 'high' : 'medium',
+      kind: "overallocated_developer",
+      severity: workload.overCapacityHours >= 8 ? "high" : "medium",
       developerId: workload.developerId,
       developerName: workload.developerName,
       taskIds: evidenceTaskIds,
@@ -317,15 +373,15 @@ export function calculateAllocationRiskSummary(sprint: Sprint): SprintAllocation
       reason:
         readyTasksForDeveloper.length > 0
           ? `Overallocated by ${workload.overCapacityHours}h; ready tasks can be reassigned`
-          : `Overallocated by ${workload.overCapacityHours}h; no ready assigned tasks to rebalance`
+          : `Overallocated by ${workload.overCapacityHours}h; no ready assigned tasks to rebalance`,
     });
   }
 
   const remainingCapacityByDeveloper = new Map<string, number>(
     workloadSummary.workloads.map((workload) => [
       workload.developerId,
-      workload.remainingCapacityHours
-    ])
+      workload.remainingCapacityHours,
+    ]),
   );
 
   for (const task of readyTaskSummary.readyTasks) {
@@ -334,7 +390,8 @@ export function calculateAllocationRiskSummary(sprint: Sprint): SprintAllocation
     }
 
     const matchingDevelopers = workloadSummary.workloads.filter((workload) => {
-      const remaining = remainingCapacityByDeveloper.get(workload.developerId) ?? 0;
+      const remaining =
+        remainingCapacityByDeveloper.get(workload.developerId) ?? 0;
       return remaining > 0 && remaining >= task.estimateHours;
     });
 
@@ -345,28 +402,28 @@ export function calculateAllocationRiskSummary(sprint: Sprint): SprintAllocation
         remainingCapacityByDeveloper.get(absorbingDeveloper.developerId) ?? 0;
       remainingCapacityByDeveloper.set(
         absorbingDeveloper.developerId,
-        remaining - task.estimateHours
+        remaining - task.estimateHours,
       );
     }
 
     risks.push({
       riskId: `unassigned:${task.taskId}`,
-      kind: 'unassigned_ready_task',
-      severity: matchingDevelopers.length > 0 ? 'medium' : 'high',
+      kind: "unassigned_ready_task",
+      severity: matchingDevelopers.length > 0 ? "medium" : "high",
       taskIds: [task.taskId],
       hoursAtRisk: task.estimateHours,
       reason:
         matchingDevelopers.length > 0
-          ? `Ready but unassigned; fits ${matchingDevelopers.map((workload) => workload.developerId).join(', ')}`
-          : 'Ready but unassigned; no developer has enough remaining capacity'
+          ? `Ready but unassigned; fits ${matchingDevelopers.map((workload) => workload.developerId).join(", ")}`
+          : "Ready but unassigned; no developer has enough remaining capacity",
     });
   }
 
   return {
     risks,
     riskCount: risks.length,
-    highRiskCount: risks.filter((risk) => risk.severity === 'high').length,
-    totalHoursAtRisk: risks.reduce((sum, risk) => sum + risk.hoursAtRisk, 0)
+    highRiskCount: risks.filter((risk) => risk.severity === "high").length,
+    totalHoursAtRisk: risks.reduce((sum, risk) => sum + risk.hoursAtRisk, 0),
   };
 }
 
@@ -392,21 +449,24 @@ function sumTaskHours(tasks: Task[]): number {
   return tasks.reduce((sum, task) => sum + task.estimateHours, 0);
 }
 
-function determineStatus(assignedHours: number, capacityHours: number): WorkloadStatus {
+function determineStatus(
+  assignedHours: number,
+  capacityHours: number,
+): WorkloadStatus {
   if (assignedHours > capacityHours) {
-    return 'overallocated';
+    return "overallocated";
   }
 
   if (assignedHours === capacityHours) {
-    return 'at_capacity';
+    return "at_capacity";
   }
 
-  return 'available';
+  return "available";
 }
 
 function findBlockingDependencies(
   task: Task,
-  tasksById: Map<string, Task>
+  tasksById: Map<string, Task>,
 ): BlockingDependency[] {
   const blockedBy: BlockingDependency[] = [];
 
@@ -416,25 +476,27 @@ function findBlockingDependencies(
     if (!dependency) {
       blockedBy.push({
         dependencyId,
-        dependencyStatus: 'missing'
+        dependencyStatus: "missing",
       });
       continue;
     }
 
-    if (dependency.status === 'done') {
+    if (dependency.status === "done") {
       continue;
     }
 
     blockedBy.push({
       dependencyId,
-      dependencyStatus: dependency.status
+      dependencyStatus: dependency.status,
     });
   }
 
   return blockedBy;
 }
 
-function groupReadyTasksByAssignee(readyTasks: ReadyTask[]): ReadyTaskAssigneeSummary[] {
+function groupReadyTasksByAssignee(
+  readyTasks: ReadyTask[],
+): ReadyTaskAssigneeSummary[] {
   const grouped = new Map<string | undefined, ReadyTaskAssigneeSummary>();
 
   for (const task of readyTasks) {
@@ -450,10 +512,10 @@ function groupReadyTasksByAssignee(readyTasks: ReadyTask[]): ReadyTaskAssigneeSu
 
     grouped.set(key, {
       assigneeId: task.assigneeId,
-      assigneeName: task.assigneeName ?? 'Unassigned',
+      assigneeName: task.assigneeName ?? "Unassigned",
       taskCount: 1,
       totalHours: task.estimateHours,
-      taskIds: [task.taskId]
+      taskIds: [task.taskId],
     });
   }
 
@@ -462,8 +524,11 @@ function groupReadyTasksByAssignee(readyTasks: ReadyTask[]): ReadyTaskAssigneeSu
 
 function buildBlockingReason(blockedBy: BlockingDependency[]): string {
   return blockedBy
-    .map((dependency) => `${dependency.dependencyId}:${dependency.dependencyStatus}`)
-    .join(', ');
+    .map(
+      (dependency) =>
+        `${dependency.dependencyId}:${dependency.dependencyStatus}`,
+    )
+    .join(", ");
 }
 
 function roundToTwoDecimals(value: number): number {
@@ -471,7 +536,7 @@ function roundToTwoDecimals(value: number): number {
 }
 
 export interface SprintStatusSummary {
-  status: Task['status'];
+  status: Task["status"];
   taskCount: number;
   totalHours: number;
   taskIds: string[];
@@ -503,25 +568,29 @@ export interface SprintProgressOptions {
   referenceDate?: string | Date;
 }
 
-const TASK_STATUSES: Task['status'][] = ['todo', 'in_progress', 'done'];
+const TASK_STATUSES: Task["status"][] = ["todo", "in_progress", "done"];
 
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
 
 export function calculateSprintProgress(
   sprint: Sprint,
-  options: SprintProgressOptions = {}
+  options: SprintProgressOptions = {},
 ): SprintProgressSummary {
   const referenceDate = normalizeReferenceDate(options.referenceDate);
   const sprintStart = parseIsoDate(sprint.startDate);
   const sprintEnd = parseIsoDate(sprint.endDate);
-  const sprintDurationDays = differenceInCalendarDays(sprintStart, sprintEnd) + 1;
+  const sprintDurationDays =
+    differenceInCalendarDays(sprintStart, sprintEnd) + 1;
   const elapsedSprintDays = clamp(
     differenceInCalendarDays(sprintStart, referenceDate) + 1,
     0,
-    sprintDurationDays
+    sprintDurationDays,
   );
   const remainingSprintDays = sprintDurationDays - elapsedSprintDays;
-  const totalEstimatedHours = sprint.tasks.reduce((sum, task) => sum + task.estimateHours, 0);
+  const totalEstimatedHours = sprint.tasks.reduce(
+    (sum, task) => sum + task.estimateHours,
+    0,
+  );
 
   const statusBreakdown = TASK_STATUSES.map((status) => {
     const tasks = sprint.tasks.filter((task) => task.status === status);
@@ -530,32 +599,53 @@ export function calculateSprintProgress(
       status,
       taskCount: tasks.length,
       totalHours: sumTaskHours(tasks),
-      taskIds: tasks.map((task) => task.id)
+      taskIds: tasks.map((task) => task.id),
     } satisfies SprintStatusSummary;
   });
 
-  const completedSummary = statusBreakdown.find((summary) => summary.status === 'done')!;
-  const inProgressSummary = statusBreakdown.find((summary) => summary.status === 'in_progress')!;
-  const todoSummary = statusBreakdown.find((summary) => summary.status === 'todo')!;
+  const completedSummary = statusBreakdown.find(
+    (summary) => summary.status === "done",
+  )!;
+  const inProgressSummary = statusBreakdown.find(
+    (summary) => summary.status === "in_progress",
+  )!;
+  const todoSummary = statusBreakdown.find(
+    (summary) => summary.status === "todo",
+  )!;
 
   const completionRateByTasks =
-    sprint.tasks.length === 0 ? 0 : roundToTwoDecimals((completedSummary.taskCount / sprint.tasks.length) * 100);
+    sprint.tasks.length === 0
+      ? 0
+      : roundToTwoDecimals(
+          (completedSummary.taskCount / sprint.tasks.length) * 100,
+        );
   const completionRateByHours =
-    totalEstimatedHours === 0 ? 0 : roundToTwoDecimals((completedSummary.totalHours / totalEstimatedHours) * 100);
+    totalEstimatedHours === 0
+      ? 0
+      : roundToTwoDecimals(
+          (completedSummary.totalHours / totalEstimatedHours) * 100,
+        );
   const elapsedSprintPercent =
-    sprintDurationDays === 0 ? 0 : roundToTwoDecimals((elapsedSprintDays / sprintDurationDays) * 100);
+    sprintDurationDays === 0
+      ? 0
+      : roundToTwoDecimals((elapsedSprintDays / sprintDurationDays) * 100);
   const averageCompletedHoursPerElapsedDay =
-    elapsedSprintDays === 0 ? 0 : roundToTwoDecimals(completedSummary.totalHours / elapsedSprintDays);
+    elapsedSprintDays === 0
+      ? 0
+      : roundToTwoDecimals(completedSummary.totalHours / elapsedSprintDays);
   const projectedCompletedHoursBySprintEnd =
     elapsedSprintDays === 0
       ? 0
       : roundToTwoDecimals(
-          (completedSummary.totalHours / elapsedSprintDays) * sprintDurationDays
+          (completedSummary.totalHours / elapsedSprintDays) *
+            sprintDurationDays,
         );
   const projectedCompletionRateByHours =
     totalEstimatedHours === 0
       ? 0
-      : roundToTwoDecimals((projectedCompletedHoursBySprintEnd / totalEstimatedHours) * 100);
+      : roundToTwoDecimals(
+          (projectedCompletedHoursBySprintEnd / totalEstimatedHours) * 100,
+        );
 
   return {
     totalTaskCount: sprint.tasks.length,
@@ -576,13 +666,20 @@ export function calculateSprintProgress(
     averageCompletedHoursPerElapsedDay,
     projectedCompletedHoursBySprintEnd,
     projectedCompletionRateByHours,
-    isProjectedToComplete: projectedCompletedHoursBySprintEnd >= totalEstimatedHours
+    isProjectedToComplete:
+      projectedCompletedHoursBySprintEnd >= totalEstimatedHours,
   };
 }
 
 function normalizeReferenceDate(referenceDate?: string | Date): Date {
   if (referenceDate instanceof Date) {
-    return new Date(Date.UTC(referenceDate.getUTCFullYear(), referenceDate.getUTCMonth(), referenceDate.getUTCDate()));
+    return new Date(
+      Date.UTC(
+        referenceDate.getUTCFullYear(),
+        referenceDate.getUTCMonth(),
+        referenceDate.getUTCDate(),
+      ),
+    );
   }
 
   if (referenceDate) {
@@ -590,7 +687,9 @@ function normalizeReferenceDate(referenceDate?: string | Date): Date {
   }
 
   const now = new Date();
-  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  return new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  );
 }
 
 function parseIsoDate(value: string): Date {

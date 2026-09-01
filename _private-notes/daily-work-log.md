@@ -52,3 +52,13 @@
 - Branch: `chore/m0-pnpm-workspace`
 - Commit: feature branch head (`chore: standardize workspace on pnpm`)
 - PR: pending
+
+## 2026-09-01
+- Completed Milestone 0's linting and formatting slice with ESLint for workspace TypeScript and Prettier for repository formatting.
+- Added package lint scripts and made pull-request CI enforce linting and formatting before build and test.
+- Established a Prettier baseline for existing source and documentation; no application behavior changed.
+- Updated `docs/PROGRESS.md` to record only the verified bootstrap work and leave the remaining frontend, backend, PostgreSQL, Docker, and shared-package tasks open.
+- Validation: `pnpm lint`, `pnpm format:check`, `pnpm build`, `pnpm test` (13 analytics tests and 1 domain test passing).
+- Branch: `chore/m0-lint-format`
+- Commit: feature branch head (`chore: enforce linting and formatting`)
+- PR: pending

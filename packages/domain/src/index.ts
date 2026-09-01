@@ -9,7 +9,7 @@ export interface Task {
   title: string;
   assigneeId?: string;
   estimateHours: number;
-  status: 'todo' | 'in_progress' | 'done';
+  status: "todo" | "in_progress" | "done";
   dependencies: string[]; // task IDs
 }
 
