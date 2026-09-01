@@ -7,7 +7,7 @@ development job reads this file to decide what to work on next.
 sessions — each run starts with no history of previous runs. If it claims work
 that was not done, the next session builds on a lie.
 
-Last verified against the code: 2026-08-31.
+Last verified against the code: 2026-09-01.
 
 ---
 
@@ -15,16 +15,16 @@ Last verified against the code: 2026-08-31.
 
 **Status: partially complete.**
 
-| Required | State |
-|---|---|
-| Workspace | done — pnpm workspace + turbo; generated dependencies, builds, and turbo caches are ignored |
-| Shared types | partial — `packages/domain` is 29 lines of types |
-| Tests | done — Node test runner unit tests on analytics, passing |
-| Frontend | **not done** — `apps/` does not exist |
-| Backend | **not done** — `apps/` does not exist |
-| PostgreSQL | **not done** |
-| Docker setup | **not done** — no `docker-compose.yml` |
-| Linting / formatting | **not done** |
+| Required             | State                                                                                       |
+| -------------------- | ------------------------------------------------------------------------------------------- |
+| Workspace            | done — pnpm workspace + turbo; generated dependencies, builds, and turbo caches are ignored |
+| Shared types         | partial — `packages/domain` is 29 lines of types                                            |
+| Tests                | done — Node test runner unit tests on analytics, passing                                    |
+| Frontend             | **not done** — `apps/` does not exist                                                       |
+| Backend              | **not done** — `apps/` does not exist                                                       |
+| PostgreSQL           | **not done**                                                                                |
+| Docker setup         | **not done** — no `docker-compose.yml`                                                      |
+| Linting / formatting | done — ESLint for TypeScript and Prettier checks run locally and in CI                      |
 
 Also missing from section 4 of the brief: `packages/ai`, `packages/shared`,
 `demo/`, `docs/`, `.env.example`. `README.md` is 28 bytes.
@@ -34,14 +34,14 @@ Also missing from section 4 of the brief: `packages/ai`, `packages/shared`,
 **Status: complete.**
 
 `.github/workflows/ci.yml` runs on every pull request and on every push to
-`main`: frozen pnpm install, build, and test across the turbo workspace.
+`main`: frozen pnpm install, lint, formatting check, build, and test across the
+turbo workspace.
 
 Registered as a required status check on `main`. A red build now blocks the
 merge instead of depending on the session's own judgement.
 
-Not yet included: linting, formatting and type checking. `turbo.json` declares a
-`lint` pipeline but no package defines a `lint` script, so there is nothing to
-run yet. Wire it up when a linter is actually added.
+Not yet included: a standalone type-check command. Package builds currently run
+TypeScript compilation, so type errors still fail CI.
 
 **Before merging anything, read "If CI fails" in the brief.**
 
@@ -58,18 +58,18 @@ issues, 5 previous sprints, seeded problems), no database, and no seed command.
 `packages/analytics` is 1108 lines and is the only substantial code in the
 repository. Against the ten functions required by section 7:
 
-| Required | State |
-|---|---|
-| `calculateSprintCompletion` | covered by `calculateSprintProgress` |
-| `calculateDeveloperWorkload` | done |
-| `findBlockedIssues` | covered by `calculateBlockedTaskRisks` |
-| `findDependencyRisks` | covered by `calculateDependencyCycleRisks` |
-| `calculateTeamVelocity` | **missing** |
-| `calculateScopeChange` | **missing** |
-| `findStaleIssues` | **missing** |
-| `findMissingEstimates` | **missing** |
-| `findMissingAcceptanceCriteria` | **missing** |
-| `calculateCarryOverRisk` | **missing** |
+| Required                        | State                                      |
+| ------------------------------- | ------------------------------------------ |
+| `calculateSprintCompletion`     | covered by `calculateSprintProgress`       |
+| `calculateDeveloperWorkload`    | done                                       |
+| `findBlockedIssues`             | covered by `calculateBlockedTaskRisks`     |
+| `findDependencyRisks`           | covered by `calculateDependencyCycleRisks` |
+| `calculateTeamVelocity`         | **missing**                                |
+| `calculateScopeChange`          | **missing**                                |
+| `findStaleIssues`               | **missing**                                |
+| `findMissingEstimates`          | **missing**                                |
+| `findMissingAcceptanceCriteria` | **missing**                                |
+| `calculateCarryOverRisk`        | **missing**                                |
 
 Two extra functions exist that the brief does not ask for:
 `calculateReadyTaskSummary` and `calculateAllocationRiskSummary`. They are
