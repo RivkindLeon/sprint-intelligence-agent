@@ -7,7 +7,7 @@ development job reads this file to decide what to work on next.
 sessions — each run starts with no history of previous runs. If it claims work
 that was not done, the next session builds on a lie.
 
-Last verified against the code: 2026-09-01.
+Last verified against the code: 2026-09-02.
 
 ---
 
@@ -20,14 +20,14 @@ Last verified against the code: 2026-09-01.
 | Workspace            | done — pnpm workspace + turbo; generated dependencies, builds, and turbo caches are ignored |
 | Shared types         | partial — `packages/domain` is 29 lines of types                                            |
 | Tests                | done — Node test runner unit tests on analytics, passing                                    |
-| Frontend             | **not done** — `apps/` does not exist                                                       |
-| Backend              | **not done** — `apps/` does not exist                                                       |
+| Frontend             | **not done** — `apps/web` does not exist                                                    |
+| Backend              | partial — `apps/api` has a runnable Fastify service and tested health endpoint              |
 | PostgreSQL           | **not done**                                                                                |
 | Docker setup         | **not done** — no `docker-compose.yml`                                                      |
 | Linting / formatting | done — ESLint for TypeScript and Prettier checks run locally and in CI                      |
 
 Also missing from section 4 of the brief: `packages/ai`, `packages/shared`,
-`demo/`, `docs/`, `.env.example`. `README.md` is 28 bytes.
+`demo/`, `.env.example`. `README.md` is 28 bytes.
 
 ## Milestone 0.5 — Continuous Integration
 
@@ -107,8 +107,8 @@ with no infrastructure, which is why they kept getting chosen — but the brief 
 explicit in section 21 that work should proceed milestone by milestone.
 
 Continue with the earliest incomplete milestone. **Finish Milestone 0 next**:
-add `apps/api` with Fastify, `apps/web` with React/Vite, PostgreSQL via Drizzle,
-`docker-compose.yml`, `.env.example`, `packages/shared`, and linting/formatting.
+extend `apps/api` with PostgreSQL via Drizzle, add `apps/web` with React/Vite,
+`docker-compose.yml`, `.env.example`, and `packages/shared`.
 Then complete Milestone 1's domain model, synthetic demo dataset, and seed
 command before returning to the remaining Milestone 2 analytics.
 
@@ -117,7 +117,6 @@ would be nothing for the tools to read.
 
 ## Correction for whoever edits the job prompt
 
-The cron prompt currently describes this repository as already having
-`apps/web/`, `apps/api/`, `packages/ai/` and `packages/shared/`. **None of those
-directories exist.** That description was aspirational, taken from section 4 of
-the brief, and it misleads every session that reads it.
+The repository now has a minimal `apps/api`, but still does not have `apps/web`,
+`packages/ai`, or `packages/shared`. Do not assume the aspirational structure in
+section 4 already exists.
