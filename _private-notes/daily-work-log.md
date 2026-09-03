@@ -62,3 +62,24 @@
 - Branch: `chore/m0-lint-format`
 - Commit: feature branch head (`chore: enforce linting and formatting`)
 - PR: pending
+
+## 2026-09-02
+- Added a runnable `@sprint-intelligence/api` Fastify workspace as the next Milestone 0 slice.
+- Added a `/health` endpoint and an injection test that verifies its status code and structured response.
+- Configured the API build, development, start, test, and lint commands; explicitly allowed the required esbuild install script.
+- Updated `docs/PROGRESS.md` to keep the remaining Bootstrap work explicit.
+- Validation: `pnpm install`, `pnpm lint`, `pnpm format:check`, `pnpm build`, `pnpm test` (13 analytics tests, 1 domain test, and 1 API test passing); required GitHub CI passed.
+- Branch: `feat/m0-fastify-api`
+- Commit: `ede852d` (`feat: bootstrap Fastify API`)
+- PR: #11 `feat: bootstrap Fastify API` (merged as `525b3a6`)
+
+## 2026-09-03
+- Added the `@sprint-intelligence/shared` workspace as the next Milestone 0 slice.
+- Added tested Zod contracts for API health responses and structured API errors.
+- Updated the Fastify health route and its integration test to consume the shared health contract.
+- Updated `docs/PROGRESS.md` to record the verified shared-package state and keep the remaining Bootstrap work explicit.
+- Validation: `pnpm lint`, `pnpm format:check`, `pnpm build`, and `pnpm test` (17 tests passing across analytics, domain, shared, and API).
+- CI initially caught a Prettier mismatch in `docs/PROGRESS.md` after its final edit; formatted the file and reran all validation before updating the branch.
+- Branch: `feat/m0-shared-contracts`
+- Commit: `feat: add shared API contracts`
+- PR: to be opened after push
