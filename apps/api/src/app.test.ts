@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { after, describe, it } from "node:test";
+import { healthResponseSchema } from "@sprint-intelligence/shared";
 
 import { buildApp } from "./app.js";
 
@@ -14,6 +15,8 @@ describe("health endpoint", () => {
     const response = await app.inject({ method: "GET", url: "/health" });
 
     assert.equal(response.statusCode, 200);
-    assert.deepEqual(response.json(), { status: "ok" });
+    assert.deepEqual(healthResponseSchema.parse(response.json()), {
+      status: "ok",
+    });
   });
 });
