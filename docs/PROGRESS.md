@@ -7,7 +7,7 @@ development job reads this file to decide what to work on next.
 sessions — each run starts with no history of previous runs. If it claims work
 that was not done, the next session builds on a lie.
 
-Last verified against the code: 2026-09-03.
+Last verified against the code: 2026-09-04.
 
 ---
 
@@ -20,7 +20,7 @@ Last verified against the code: 2026-09-03.
 | Workspace            | done — pnpm workspace + turbo; generated dependencies, builds, and turbo caches are ignored |
 | Shared types         | partial — tested Zod API contracts now live in `packages/shared`; domain types remain small |
 | Tests                | done — Node test runner suites across all current workspaces, passing                       |
-| Frontend             | **not done** — `apps/web` does not exist                                                    |
+| Frontend             | done — tested React/Vite application shell in `apps/web`                                    |
 | Backend              | partial — `apps/api` has a runnable Fastify service and tested health endpoint              |
 | PostgreSQL           | **not done**                                                                                |
 | Docker setup         | **not done** — no `docker-compose.yml`                                                      |
@@ -107,9 +107,9 @@ with no infrastructure, which is why they kept getting chosen — but the brief 
 explicit in section 21 that work should proceed milestone by milestone.
 
 Continue with the earliest incomplete milestone. **Finish Milestone 0 next**:
-extend `apps/api` with PostgreSQL via Drizzle, add `apps/web` with React/Vite,
-`docker-compose.yml`, and `.env.example`. The shared package exists with the
-initial health and API error contracts; grow it as endpoints are added.
+extend `apps/api` with PostgreSQL via Drizzle, add `docker-compose.yml`, and
+`.env.example`. The React/Vite frontend shell and shared package exist; grow them
+as application behavior and endpoints are added.
 Then complete Milestone 1's domain model, synthetic demo dataset, and seed
 command before returning to the remaining Milestone 2 analytics.
 
