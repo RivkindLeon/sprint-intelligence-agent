@@ -83,3 +83,13 @@
 - Branch: `feat/m0-shared-contracts`
 - Commit: `feat: add shared API contracts`
 - PR: to be opened after push
+
+## 2026-09-04
+
+- Added the `@sprint-intelligence/web` React/Vite workspace as the next Milestone 0 slice.
+- Added a responsive dashboard shell and a Vitest/Testing Library smoke test that verifies its core content.
+- Updated `docs/PROGRESS.md` to mark only the verified frontend bootstrap complete and keep PostgreSQL, Docker, and environment configuration open.
+- Validation: `pnpm format:check`, `pnpm lint`, `pnpm build`, and `pnpm test` (18 tests passing across analytics, domain, shared, API, and web).
+- Branch: `feat/m0-react-web`
+- Commit: feature branch head (`feat: bootstrap React web app`).
+- PR: #13 `feat: bootstrap React web app`.
