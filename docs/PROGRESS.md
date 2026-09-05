@@ -7,7 +7,7 @@ development job reads this file to decide what to work on next.
 sessions — each run starts with no history of previous runs. If it claims work
 that was not done, the next session builds on a lie.
 
-Last verified against the code: 2026-09-04.
+Last verified against the code: 2026-09-05.
 
 ---
 
@@ -21,13 +21,14 @@ Last verified against the code: 2026-09-04.
 | Shared types         | partial — tested Zod API contracts now live in `packages/shared`; domain types remain small |
 | Tests                | done — Node test runner suites across all current workspaces, passing                       |
 | Frontend             | done — tested React/Vite application shell in `apps/web`                                    |
-| Backend              | partial — `apps/api` has a runnable Fastify service and tested health endpoint              |
-| PostgreSQL           | **not done**                                                                                |
-| Docker setup         | **not done** — no `docker-compose.yml`                                                      |
+| Backend              | partial — Fastify health endpoint plus tested Drizzle/PostgreSQL connection plumbing        |
+| PostgreSQL           | partial — configured through Drizzle; tables, migrations, and a live DB check remain        |
+| Docker setup         | partial — PostgreSQL Compose service added; Docker was unavailable for a live verification  |
 | Linting / formatting | done — ESLint for TypeScript and Prettier checks run locally and in CI                      |
 
-Also missing from section 4 of the brief: `packages/ai`, `demo/`, and
-`.env.example`. `README.md` is 28 bytes.
+Also missing from section 4 of the brief: `packages/ai` and `demo/`.
+`.env.example` now documents database, API, and future AI settings. `README.md`
+is 28 bytes.
 
 ## Milestone 0.5 — Continuous Integration
 
@@ -107,17 +108,17 @@ with no infrastructure, which is why they kept getting chosen — but the brief 
 explicit in section 21 that work should proceed milestone by milestone.
 
 Continue with the earliest incomplete milestone. **Finish Milestone 0 next**:
-extend `apps/api` with PostgreSQL via Drizzle, add `docker-compose.yml`, and
-`.env.example`. The React/Vite frontend shell and shared package exist; grow them
-as application behavior and endpoints are added.
-Then complete Milestone 1's domain model, synthetic demo dataset, and seed
-command before returning to the remaining Milestone 2 analytics.
+run and verify the PostgreSQL Compose service in an environment with Docker,
+then exercise the Drizzle connection against it. Do not add domain tables merely
+to make this bootstrap milestone look complete; tables, migrations, the domain
+model, synthetic demo dataset, and seed command belong together in Milestone 1.
+After that, return to the remaining Milestone 2 analytics.
 
 Do not start Milestone 3 (AI tools) before the demo dataset exists — there
 would be nothing for the tools to read.
 
 ## Correction for whoever edits the job prompt
 
-The repository now has a minimal `apps/api`, but still does not have `apps/web`,
-`packages/ai`, or `packages/shared`. Do not assume the aspirational structure in
-section 4 already exists.
+The repository now has minimal `apps/api` and `apps/web` applications plus
+`packages/shared`, but still does not have `packages/ai` or `demo`. Do not assume
+the full aspirational structure in section 4 already exists.

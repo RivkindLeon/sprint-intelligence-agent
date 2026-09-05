@@ -6,17 +6,22 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
     "dev": "tsx watch src/index.ts",
     "start": "node dist/index.js",
-    "test": "node --test dist/**/*.test.js",
-    "lint": "eslint src --max-warnings 0"
+    "test": "node --test dist/*.test.js dist/**/*.test.js",
+    "lint": "eslint src drizzle.config.ts --max-warnings 0"
   },
   "dependencies": {
     "@sprint-intelligence/shared": "workspace:*",
-    "fastify": "^5.6.0"
+    "drizzle-orm": "^0.45.2",
+    "fastify": "^5.6.0",
+    "postgres": "^3.4.9"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",
+    "drizzle-kit": "^0.31.10",
     "tsx": "^4.20.0",
     "typescript": "^5.3.3"
   }
