@@ -51,7 +51,7 @@
 - Validation: `pnpm install --frozen-lockfile`, `pnpm build`, `pnpm test` (13 analytics tests and 1 domain test passing).
 - Branch: `chore/m0-pnpm-workspace`
 - Commit: feature branch head (`chore: standardize workspace on pnpm`)
-- PR: pending
+- PR: #14 `feat: bootstrap PostgreSQL with Drizzle`
 
 ## 2026-09-01
 - Completed Milestone 0's linting and formatting slice with ESLint for workspace TypeScript and Prettier for repository formatting.
@@ -93,3 +93,13 @@
 - Branch: `feat/m0-react-web`
 - Commit: feature branch head (`feat: bootstrap React web app`).
 - PR: #13 `feat: bootstrap React web app`.
+
+## 2026-09-05
+
+- Added PostgreSQL/Drizzle bootstrap plumbing to `apps/api`, including validated database URL configuration and migration commands.
+- Added a PostgreSQL 17 Compose service with persistent storage and a readiness health check, plus `.env.example` for database, API, and future provider-agnostic AI configuration.
+- Added database configuration tests and corrected the API test glob so both root-level and nested tests execute.
+- Validation: `pnpm format:check`, `pnpm lint`, `pnpm build`, `pnpm test` (21 tests passing), and `drizzle-kit generate`. Docker is unavailable on this runner, so the Compose service was not started and Milestone 0 remains partial pending live verification.
+- Branch: `feat/m0-postgres-drizzle`
+- Commit: feature branch head (`feat: bootstrap PostgreSQL with Drizzle`)
+- PR: pending
