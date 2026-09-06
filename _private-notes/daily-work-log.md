@@ -103,3 +103,13 @@
 - Branch: `feat/m0-postgres-drizzle`
 - Commit: feature branch head (`feat: bootstrap PostgreSQL with Drizzle`)
 - PR: pending
+
+## 2026-09-06
+
+- Added a live PostgreSQL integration test that connects through the production Drizzle connection factory, executes `select 1`, asserts the result, and closes the client.
+- Added a PostgreSQL 17 service container to CI using the same database settings and health check as Docker Compose; the integration test is enabled explicitly in CI and skipped during local runs without PostgreSQL.
+- Updated `docs/PROGRESS.md` to mark Milestone 0 complete, contingent on the required PR check passing, and direct the next session to Milestone 1.
+- Local validation: `pnpm format:check`, `pnpm lint`, `pnpm build`, and `pnpm test` passed; the database suite skipped locally because Docker/PostgreSQL is unavailable on this runner.
+- Branch: `test/m0-postgres-integration`
+- Commit: `9a35f29` (`test: verify PostgreSQL connection in CI`)
+- PR: #15 `test: verify PostgreSQL connection in CI`
