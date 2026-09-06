@@ -12,6 +12,23 @@ jobs:
     name: build and test
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: sprint_intelligence
+          POSTGRES_USER: sprint_intelligence
+          POSTGRES_PASSWORD: sprint_intelligence
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U sprint_intelligence -d sprint_intelligence"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://sprint_intelligence:sprint_intelligence@localhost:5432/sprint_intelligence
+      RUN_DATABASE_INTEGRATION_TEST: "true"
     steps:
       - uses: actions/checkout@v4
 

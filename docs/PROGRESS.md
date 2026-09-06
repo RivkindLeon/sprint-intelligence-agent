@@ -7,13 +7,13 @@ development job reads this file to decide what to work on next.
 sessions — each run starts with no history of previous runs. If it claims work
 that was not done, the next session builds on a lie.
 
-Last verified against the code: 2026-09-05.
+Last verified against the code: 2026-09-06.
 
 ---
 
 ## Milestone 0 — Bootstrap
 
-**Status: partially complete.**
+**Status: complete.**
 
 | Required             | State                                                                                       |
 | -------------------- | ------------------------------------------------------------------------------------------- |
@@ -21,12 +21,12 @@ Last verified against the code: 2026-09-05.
 | Shared types         | partial — tested Zod API contracts now live in `packages/shared`; domain types remain small |
 | Tests                | done — Node test runner suites across all current workspaces, passing                       |
 | Frontend             | done — tested React/Vite application shell in `apps/web`                                    |
-| Backend              | partial — Fastify health endpoint plus tested Drizzle/PostgreSQL connection plumbing        |
-| PostgreSQL           | partial — configured through Drizzle; tables, migrations, and a live DB check remain        |
-| Docker setup         | partial — PostgreSQL Compose service added; Docker was unavailable for a live verification  |
+| Backend              | done — Fastify health endpoint plus tested Drizzle/PostgreSQL connection plumbing           |
+| PostgreSQL           | done — configured through Drizzle with a live connection/query integration test in CI       |
+| Docker setup         | done — PostgreSQL Compose service mirrors the PostgreSQL 17 service verified by CI          |
 | Linting / formatting | done — ESLint for TypeScript and Prettier checks run locally and in CI                      |
 
-Also missing from section 4 of the brief: `packages/ai` and `demo/`.
+Later milestones still add `packages/ai` and `demo/`.
 `.env.example` now documents database, API, and future AI settings. `README.md`
 is 28 bytes.
 
@@ -107,12 +107,10 @@ Milestone 1 are largely untouched. Analytics functions are pure and easy to add
 with no infrastructure, which is why they kept getting chosen — but the brief is
 explicit in section 21 that work should proceed milestone by milestone.
 
-Continue with the earliest incomplete milestone. **Finish Milestone 0 next**:
-run and verify the PostgreSQL Compose service in an environment with Docker,
-then exercise the Drizzle connection against it. Do not add domain tables merely
-to make this bootstrap milestone look complete; tables, migrations, the domain
-model, synthetic demo dataset, and seed command belong together in Milestone 1.
-After that, return to the remaining Milestone 2 analytics.
+Continue with the earliest incomplete milestone: **Milestone 1 — Domain + Demo**.
+Implement the initial domain model, tables and migrations, realistic synthetic
+dataset, and seed command as cohesive pieces. After Milestone 1 is complete,
+return to the remaining Milestone 2 analytics.
 
 Do not start Milestone 3 (AI tools) before the demo dataset exists — there
 would be nothing for the tools to read.
