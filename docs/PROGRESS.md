@@ -7,7 +7,7 @@ development job reads this file to decide what to work on next.
 sessions — each run starts with no history of previous runs. If it claims work
 that was not done, the next session builds on a lie.
 
-Last verified against the code: 2026-09-06.
+Last verified against the code: 2026-09-07.
 
 ---
 
@@ -48,9 +48,14 @@ TypeScript compilation, so type errors still fail CI.
 
 ## Milestone 1 — Domain + Demo
 
-**Status: not started.** `packages/domain` holds a small set of types. There is
-no synthetic dataset (the brief asks for 6 developers, 1 active sprint, ~35
-issues, 5 previous sprints, seeded problems), no database, and no seed command.
+**Status: in progress.** `packages/domain` defines the initial `Sprint`,
+`Issue`, `Developer`, `SprintHistory`, `IssueDependency`, and `Activity`
+concepts, with tested status/type values. A deprecated hours-based `Task` shape
+remains temporarily for compatibility with existing Milestone 2 analytics.
+
+Still missing: database tables and migrations, the synthetic dataset (6
+developers, 1 active sprint, ~35 issues, 5 previous sprints, and seeded
+problems), and a seed command.
 
 ## Milestone 2 — Analytics Engine
 
@@ -108,9 +113,9 @@ with no infrastructure, which is why they kept getting chosen — but the brief 
 explicit in section 21 that work should proceed milestone by milestone.
 
 Continue with the earliest incomplete milestone: **Milestone 1 — Domain + Demo**.
-Implement the initial domain model, tables and migrations, realistic synthetic
-dataset, and seed command as cohesive pieces. After Milestone 1 is complete,
-return to the remaining Milestone 2 analytics.
+The initial domain model is complete. Next, implement the corresponding
+PostgreSQL tables and migration. Then add the realistic synthetic dataset and
+seed command before returning to the remaining Milestone 2 analytics.
 
 Do not start Milestone 3 (AI tools) before the demo dataset exists — there
 would be nothing for the tools to read.
