@@ -1,0 +1,496 @@
+{
+  "id": "6423fd35-33bd-4c90-a889-aa5db00ac200",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.activities": {
+      "name": "activities",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "issue_id": {
+          "name": "issue_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "activity_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "occurred_at": {
+          "name": "occurred_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "from_value": {
+          "name": "from_value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "to_value": {
+          "name": "to_value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "activities_issue_id_issues_id_fk": {
+          "name": "activities_issue_id_issues_id_fk",
+          "tableFrom": "activities",
+          "tableTo": "issues",
+          "columnsFrom": ["issue_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.developers": {
+      "name": "developers",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "capacity_story_points": {
+          "name": "capacity_story_points",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "active": {
+          "name": "active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "developers_email_unique": {
+          "name": "developers_email_unique",
+          "nullsNotDistinct": false,
+          "columns": ["email"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "developers_nonnegative_capacity": {
+          "name": "developers_nonnegative_capacity",
+          "value": "\"developers\".\"capacity_story_points\" is null or \"developers\".\"capacity_story_points\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.issue_dependencies": {
+      "name": "issue_dependencies",
+      "schema": "",
+      "columns": {
+        "issue_id": {
+          "name": "issue_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "depends_on_issue_id": {
+          "name": "depends_on_issue_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "issue_dependencies_issue_id_issues_id_fk": {
+          "name": "issue_dependencies_issue_id_issues_id_fk",
+          "tableFrom": "issue_dependencies",
+          "tableTo": "issues",
+          "columnsFrom": ["issue_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "issue_dependencies_depends_on_issue_id_issues_id_fk": {
+          "name": "issue_dependencies_depends_on_issue_id_issues_id_fk",
+          "tableFrom": "issue_dependencies",
+          "tableTo": "issues",
+          "columnsFrom": ["depends_on_issue_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "issue_dependencies_issue_id_depends_on_issue_id_pk": {
+          "name": "issue_dependencies_issue_id_depends_on_issue_id_pk",
+          "columns": ["issue_id", "depends_on_issue_id"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "issue_dependencies_no_self_reference": {
+          "name": "issue_dependencies_no_self_reference",
+          "value": "\"issue_dependencies\".\"issue_id\" <> \"issue_dependencies\".\"depends_on_issue_id\""
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.issues": {
+      "name": "issues",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "type": {
+          "name": "type",
+          "type": "issue_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "issue_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "assignee_id": {
+          "name": "assignee_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "story_points": {
+          "name": "story_points",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sprint_id": {
+          "name": "sprint_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "acceptance_criteria": {
+          "name": "acceptance_criteria",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "issues_assignee_id_developers_id_fk": {
+          "name": "issues_assignee_id_developers_id_fk",
+          "tableFrom": "issues",
+          "tableTo": "developers",
+          "columnsFrom": ["assignee_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "issues_sprint_id_sprints_id_fk": {
+          "name": "issues_sprint_id_sprints_id_fk",
+          "tableFrom": "issues",
+          "tableTo": "sprints",
+          "columnsFrom": ["sprint_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "issues_nonnegative_story_points": {
+          "name": "issues_nonnegative_story_points",
+          "value": "\"issues\".\"story_points\" is null or \"issues\".\"story_points\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.sprint_developers": {
+      "name": "sprint_developers",
+      "schema": "",
+      "columns": {
+        "sprint_id": {
+          "name": "sprint_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "developer_id": {
+          "name": "developer_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "sprint_developers_sprint_id_sprints_id_fk": {
+          "name": "sprint_developers_sprint_id_sprints_id_fk",
+          "tableFrom": "sprint_developers",
+          "tableTo": "sprints",
+          "columnsFrom": ["sprint_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "sprint_developers_developer_id_developers_id_fk": {
+          "name": "sprint_developers_developer_id_developers_id_fk",
+          "tableFrom": "sprint_developers",
+          "tableTo": "developers",
+          "columnsFrom": ["developer_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "sprint_developers_sprint_id_developer_id_pk": {
+          "name": "sprint_developers_sprint_id_developer_id_pk",
+          "columns": ["sprint_id", "developer_id"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.sprint_history": {
+      "name": "sprint_history",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "sprint_id": {
+          "name": "sprint_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sprint_name": {
+          "name": "sprint_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "started_at": {
+          "name": "started_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "completed_at": {
+          "name": "completed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "committed_story_points": {
+          "name": "committed_story_points",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "completed_story_points": {
+          "name": "completed_story_points",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "carried_over_issue_ids": {
+          "name": "carried_over_issue_ids",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "sprint_history_sprint_id_unique": {
+          "name": "sprint_history_sprint_id_unique",
+          "nullsNotDistinct": false,
+          "columns": ["sprint_id"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "sprint_history_valid_dates": {
+          "name": "sprint_history_valid_dates",
+          "value": "\"sprint_history\".\"completed_at\" >= \"sprint_history\".\"started_at\""
+        },
+        "sprint_history_nonnegative_points": {
+          "name": "sprint_history_nonnegative_points",
+          "value": "\"sprint_history\".\"committed_story_points\" >= 0 and \"sprint_history\".\"completed_story_points\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.sprints": {
+      "name": "sprints",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "goal": {
+          "name": "goal",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "start_date": {
+          "name": "start_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "end_date": {
+          "name": "end_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "sprints_valid_date_range": {
+          "name": "sprints_valid_date_range",
+          "value": "\"sprints\".\"end_date\" >= \"sprints\".\"start_date\""
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.activity_type": {
+      "name": "activity_type",
+      "schema": "public",
+      "values": [
+        "created",
+        "status_changed",
+        "assignee_changed",
+        "estimate_changed",
+        "added_to_sprint",
+        "removed_from_sprint"
+      ]
+    },
+    "public.issue_status": {
+      "name": "issue_status",
+      "schema": "public",
+      "values": ["todo", "in_progress", "blocked", "done"]
+    },
+    "public.issue_type": {
+      "name": "issue_type",
+      "schema": "public",
+      "values": ["story", "bug", "task"]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}
