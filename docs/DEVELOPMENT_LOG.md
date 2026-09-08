@@ -122,3 +122,21 @@
 - Branch: `test/m0-postgres-integration`
 - Commit: `9a35f29` (`test: verify PostgreSQL connection in CI`)
 - PR: #15 `test: verify PostgreSQL connection in CI`
+
+## 2026-09-07
+
+- Completed the initial Milestone 1 domain model with `Sprint`, `Issue`, `Developer`, `SprintHistory`, `IssueDependency`, and `Activity` concepts plus explicit issue/activity value sets.
+- Retained deprecated hours-based compatibility fields for the existing Milestone 2 analytics; migrating those analytics to canonical issues remains future work.
+- Added tests covering supported values and a representative sprint with traceable dependency, activity, and carry-over evidence.
+- Validation: `pnpm format:check`, `pnpm lint`, `pnpm build`, and `pnpm test` (19 tests passing; the PostgreSQL integration suite skipped locally without PostgreSQL).
+- Branch: `feat/m1-domain-model`
+- Commit: `364238f` (`feat: define sprint domain model`)
+- PR: #16 `feat: define sprint domain model`
+
+## 2026-09-08
+
+- Added the initial Milestone 1 PostgreSQL schema and generated Drizzle migration for sprints, developers, sprint membership, issues, normalized dependencies, activities, and sprint history.
+- Added database constraints for valid dates, nonnegative story-point values and capacities, and non-self issue dependencies.
+- Added schema tests and extended the PostgreSQL integration suite to apply the migration and verify all seven domain tables.
+- Local validation: `pnpm format:check`, `pnpm lint`, `pnpm build`, and `pnpm test` passed (21 tests passing, one PostgreSQL suite skipped). Docker is unavailable on the host, so the migration integration is delegated to the required CI PostgreSQL service before merge.
+- Branch: `feat/m1-database-schema`
