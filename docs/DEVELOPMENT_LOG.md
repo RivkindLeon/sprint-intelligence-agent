@@ -1,6 +1,7 @@
 # Daily Work Log
 
 ## 2026-08-23
+
 - Added a new `@sprint-intelligence/analytics` workspace package with deterministic `calculateDeveloperWorkload()` logic.
 - Covered overallocated, at-capacity, under-capacity, zero-capacity, and unassigned task scenarios with automated tests.
 - Validation: `npm run build`, `npm test`.
@@ -9,6 +10,7 @@
 - PR: #1 `feat: add deterministic workload analytics` (merged)
 
 ## 2026-08-24
+
 - Added deterministic `calculateBlockedTaskRisks()` analytics so sprint risk analysis can cite exact blocking dependencies instead of relying on LLM guesses.
 - Covered active blockers, missing dependencies, completed dependencies, and ready work with automated tests.
 - Validation: `npm run build`, `npm test`.
@@ -17,6 +19,7 @@
 - PR: #2 `feat: add deterministic blocking risk analytics` (open)
 
 ## 2026-08-26
+
 - Added deterministic `calculateReadyTaskSummary()` analytics to expose the executable task queue for the sprint, grouped by assignee and highlighting ready unassigned work.
 - Reused dependency checks so only non-blocked tasks are surfaced, giving the LLM prepared evidence about what can start now instead of guessing from raw task lists.
 - Covered executable, blocked, missing-dependency, completed, and unassigned-task scenarios with automated tests.
@@ -26,6 +29,7 @@
 - PR: #4 `feat: add ready task analytics` (open)
 
 ## 2026-08-29
+
 - Fixed deterministic sprint delivery projections to calculate from the full-precision completion rate instead of a prematurely rounded daily average.
 - Prevented completed sprints from reporting impossible projection artifacts such as 3.01 projected hours from exactly 3 completed hours.
 - Updated regression coverage for completed-sprint projected hours and completion percentage.
@@ -35,6 +39,7 @@
 - PR: #9 `chore: standardize workspace on pnpm` (open)
 
 ## 2026-08-30
+
 - Added deterministic `calculateDependencyCycleRisks()` analytics to detect circular task dependencies that cannot resolve through normal sprint execution.
 - Each risk includes the affected task IDs, exact dependency edges, and estimated hours at risk so downstream AI conclusions can cite concrete issue/dependency evidence.
 - Covered multi-task cycles, self-dependencies, acyclic graphs, and missing dependencies with automated tests.
@@ -44,6 +49,7 @@
 - PR: #8 `feat: detect sprint dependency cycles` (open)
 
 ## 2026-08-31
+
 - Standardized Milestone 0's workspace on pnpm, including a workspace manifest, pinned package manager, lockfile, and workspace protocol for internal dependencies.
 - Updated CI to install with the frozen pnpm lockfile and run the existing build and test suite through pnpm.
 - Stopped versioning generated `node_modules`, build output, and turbo caches; these remain reproducible from source and the lockfile.
@@ -54,6 +60,7 @@
 - PR: #14 `feat: bootstrap PostgreSQL with Drizzle`
 
 ## 2026-09-01
+
 - Completed Milestone 0's linting and formatting slice with ESLint for workspace TypeScript and Prettier for repository formatting.
 - Added package lint scripts and made pull-request CI enforce linting and formatting before build and test.
 - Established a Prettier baseline for existing source and documentation; no application behavior changed.
@@ -64,6 +71,7 @@
 - PR: pending
 
 ## 2026-09-02
+
 - Added a runnable `@sprint-intelligence/api` Fastify workspace as the next Milestone 0 slice.
 - Added a `/health` endpoint and an injection test that verifies its status code and structured response.
 - Configured the API build, development, start, test, and lint commands; explicitly allowed the required esbuild install script.
@@ -74,6 +82,7 @@
 - PR: #11 `feat: bootstrap Fastify API` (merged as `525b3a6`)
 
 ## 2026-09-03
+
 - Added the `@sprint-intelligence/shared` workspace as the next Milestone 0 slice.
 - Added tested Zod contracts for API health responses and structured API errors.
 - Updated the Fastify health route and its integration test to consume the shared health contract.
