@@ -1,0 +1,15 @@
+{
+  "id": "sprint-24",
+  "name": "Sprint 24",
+  "goal": "Ship secure team invitations and improve checkout reliability",
+  "startDate": "2026-09-01",
+  "endDate": "2026-09-14",
+  "developerIds": [
+    "dev-leon",
+    "dev-anna",
+    "dev-david",
+    "dev-maya",
+    "dev-noah",
+    "dev-sara"
+  ]
+}

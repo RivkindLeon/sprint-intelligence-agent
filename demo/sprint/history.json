@@ -1,0 +1,52 @@
+[
+  {
+    "id": "history-19",
+    "sprintId": "sprint-19",
+    "sprintName": "Sprint 19",
+    "startedAt": "2026-06-23T09:00:00Z",
+    "completedAt": "2026-07-06T17:00:00Z",
+    "committedStoryPoints": 58,
+    "completedStoryPoints": 47,
+    "carriedOverIssueIds": ["PAY-182"]
+  },
+  {
+    "id": "history-20",
+    "sprintId": "sprint-20",
+    "sprintName": "Sprint 20",
+    "startedAt": "2026-07-07T09:00:00Z",
+    "completedAt": "2026-07-20T17:00:00Z",
+    "committedStoryPoints": 55,
+    "completedStoryPoints": 50,
+    "carriedOverIssueIds": ["AUTH-190"]
+  },
+  {
+    "id": "history-21",
+    "sprintId": "sprint-21",
+    "sprintName": "Sprint 21",
+    "startedAt": "2026-07-21T09:00:00Z",
+    "completedAt": "2026-08-03T17:00:00Z",
+    "committedStoryPoints": 62,
+    "completedStoryPoints": 48,
+    "carriedOverIssueIds": ["OPS-77", "WEB-311"]
+  },
+  {
+    "id": "history-22",
+    "sprintId": "sprint-22",
+    "sprintName": "Sprint 22",
+    "startedAt": "2026-08-04T09:00:00Z",
+    "completedAt": "2026-08-17T17:00:00Z",
+    "committedStoryPoints": 57,
+    "completedStoryPoints": 52,
+    "carriedOverIssueIds": ["DATA-88"]
+  },
+  {
+    "id": "history-23",
+    "sprintId": "sprint-23",
+    "sprintName": "Sprint 23",
+    "startedAt": "2026-08-18T09:00:00Z",
+    "completedAt": "2026-08-31T17:00:00Z",
+    "committedStoryPoints": 60,
+    "completedStoryPoints": 49,
+    "carriedOverIssueIds": ["AUTH-198", "PAY-205"]
+  }
+]

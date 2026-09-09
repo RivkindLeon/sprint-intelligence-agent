@@ -6,3 +6,4 @@ dist/
 # Local configuration and private development notes
 .env
 .env.local
+_private-notes/
