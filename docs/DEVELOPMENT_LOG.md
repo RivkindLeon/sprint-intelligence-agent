@@ -140,3 +140,12 @@
 - Added schema tests and extended the PostgreSQL integration suite to apply the migration and verify all seven domain tables.
 - Local validation: `pnpm format:check`, `pnpm lint`, `pnpm build`, and `pnpm test` passed (21 tests passing, one PostgreSQL suite skipped). Docker is unavailable on the host, so the migration integration is delegated to the required CI PostgreSQL service before merge.
 - Branch: `feat/m1-database-schema`
+
+## 2026-09-09
+
+- Added the Milestone 1 synthetic demo dataset: 6 developers, 1 active sprint, 35 issues, and 5 previous sprint summaries.
+- Embedded intentional, traceable delivery signals including an overloaded developer, blocked work, unfinished dependencies, stale work, mid-sprint additions, missing estimates, and missing acceptance criteria.
+- Added tests for dataset size, identity/reference integrity, and the required risk fixtures.
+- Kept Milestone 1 in progress: the PostgreSQL seed command remains the next required work item.
+- Validation: `pnpm format`, `pnpm lint`, `pnpm build`, and `pnpm test` (23 tests passing; one PostgreSQL suite skipped locally).
+- Branch: `feat/m1-demo-dataset`

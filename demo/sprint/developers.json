@@ -1,0 +1,44 @@
+[
+  {
+    "id": "dev-leon",
+    "name": "Leon Chen",
+    "email": "leon@example.test",
+    "capacityStoryPoints": 13,
+    "active": true
+  },
+  {
+    "id": "dev-anna",
+    "name": "Anna Patel",
+    "email": "anna@example.test",
+    "capacityStoryPoints": 13,
+    "active": true
+  },
+  {
+    "id": "dev-david",
+    "name": "David Kim",
+    "email": "david@example.test",
+    "capacityStoryPoints": 10,
+    "active": true
+  },
+  {
+    "id": "dev-maya",
+    "name": "Maya Ortiz",
+    "email": "maya@example.test",
+    "capacityStoryPoints": 10,
+    "active": true
+  },
+  {
+    "id": "dev-noah",
+    "name": "Noah Williams",
+    "email": "noah@example.test",
+    "capacityStoryPoints": 8,
+    "active": true
+  },
+  {
+    "id": "dev-sara",
+    "name": "Sara Ibrahim",
+    "email": "sara@example.test",
+    "capacityStoryPoints": 8,
+    "active": true
+  }
+]
