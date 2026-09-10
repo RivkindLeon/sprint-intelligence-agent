@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 
-import { eq, sql } from "drizzle-orm";
+import { eq, inArray, or, sql } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 
 import { createDatabaseConnection } from "./client.js";
@@ -109,6 +109,15 @@ export async function seedDemoDataset(
           endDate: sprint.endDate,
         },
       });
+    const issueIds = issueRows.map(({ id }) => id);
+    await tx
+      .delete(issueDependencies)
+      .where(
+        or(
+          inArray(issueDependencies.issueId, issueIds),
+          inArray(issueDependencies.dependsOnIssueId, issueIds),
+        ),
+      );
     await tx.delete(issues).where(eq(issues.sprintId, sprint.id));
     await tx
       .delete(sprintDevelopers)
