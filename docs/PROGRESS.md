@@ -7,7 +7,7 @@ development job reads this file to decide what to work on next.
 sessions — each run starts with no history of previous runs. If it claims work
 that was not done, the next session builds on a lie.
 
-Last verified against the code: 2026-09-09.
+Last verified against the code: 2026-09-10.
 
 ---
 
@@ -48,7 +48,7 @@ TypeScript compilation, so type errors still fail CI.
 
 ## Milestone 1 — Domain + Demo
 
-**Status: in progress.** `packages/domain` defines the initial `Sprint`,
+**Status: complete.** `packages/domain` defines the initial `Sprint`,
 `Issue`, `Developer`, `SprintHistory`, `IssueDependency`, and `Activity`
 concepts, with tested status/type values. A deprecated hours-based `Task` shape
 remains temporarily for compatibility with existing Milestone 2 analytics.
@@ -65,8 +65,11 @@ issues, and 5 previous sprint summaries. Tests verify referential integrity and
 the deliberately seeded signals: overload, blockers, unfinished dependencies,
 scope additions, missing estimates, and missing acceptance criteria.
 
-Still missing: a database seed command. The JSON dataset is not yet loaded into
-PostgreSQL.
+`pnpm --filter @sprint-intelligence/api db:seed` transactionally loads the JSON
+dataset into PostgreSQL. It is safe to rerun: the demo sprint is replaced and
+developers plus history records are updated. The database integration suite
+verifies all 35 issues, normalized dependencies, scope-change activities, and
+five history records after two consecutive seed runs.
 
 ## Milestone 2 — Analytics Engine
 
@@ -123,10 +126,9 @@ Milestone 1 are largely untouched. Analytics functions are pure and easy to add
 with no infrastructure, which is why they kept getting chosen — but the brief is
 explicit in section 21 that work should proceed milestone by milestone.
 
-Continue with the earliest incomplete milestone: **Milestone 1 — Domain + Demo**.
-The initial domain model, corresponding PostgreSQL migration, and realistic
-synthetic dataset are complete. Next, add the database seed command before
-returning to the remaining Milestone 2 analytics.
+Continue with the earliest incomplete milestone: **Milestone 2 — Analytics
+Engine**. Milestone 1 is complete. Implement the next missing required function,
+`calculateTeamVelocity`, with unit tests before proceeding down the table.
 
 Do not start Milestone 3 (AI tools) before the demo dataset exists — there
 would be nothing for the tools to read.
