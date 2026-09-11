@@ -7,7 +7,7 @@ development job reads this file to decide what to work on next.
 sessions — each run starts with no history of previous runs. If it claims work
 that was not done, the next session builds on a lie.
 
-Last verified against the code: 2026-09-10.
+Last verified against the code: 2026-09-11.
 
 ---
 
@@ -78,18 +78,18 @@ five history records after two consecutive seed runs.
 `packages/analytics` is 1108 lines and is the only substantial code in the
 repository. Against the ten functions required by section 7:
 
-| Required                        | State                                      |
-| ------------------------------- | ------------------------------------------ |
-| `calculateSprintCompletion`     | covered by `calculateSprintProgress`       |
-| `calculateDeveloperWorkload`    | done                                       |
-| `findBlockedIssues`             | covered by `calculateBlockedTaskRisks`     |
-| `findDependencyRisks`           | covered by `calculateDependencyCycleRisks` |
-| `calculateTeamVelocity`         | **missing**                                |
-| `calculateScopeChange`          | **missing**                                |
-| `findStaleIssues`               | **missing**                                |
-| `findMissingEstimates`          | **missing**                                |
-| `findMissingAcceptanceCriteria` | **missing**                                |
-| `calculateCarryOverRisk`        | **missing**                                |
+| Required                        | State                                        |
+| ------------------------------- | -------------------------------------------- |
+| `calculateSprintCompletion`     | covered by `calculateSprintProgress`         |
+| `calculateDeveloperWorkload`    | done                                         |
+| `findBlockedIssues`             | covered by `calculateBlockedTaskRisks`       |
+| `findDependencyRisks`           | covered by `calculateDependencyCycleRisks`   |
+| `calculateTeamVelocity`         | done — tested historical story-point summary |
+| `calculateScopeChange`          | **missing**                                  |
+| `findStaleIssues`               | **missing**                                  |
+| `findMissingEstimates`          | **missing**                                  |
+| `findMissingAcceptanceCriteria` | **missing**                                  |
+| `calculateCarryOverRisk`        | **missing**                                  |
 
 Two extra functions exist that the brief does not ask for:
 `calculateReadyTaskSummary` and `calculateAllocationRiskSummary`. They are
@@ -128,7 +128,7 @@ explicit in section 21 that work should proceed milestone by milestone.
 
 Continue with the earliest incomplete milestone: **Milestone 2 — Analytics
 Engine**. Milestone 1 is complete. Implement the next missing required function,
-`calculateTeamVelocity`, with unit tests before proceeding down the table.
+`calculateScopeChange`, with unit tests before proceeding down the table.
 
 Do not start Milestone 3 (AI tools) before the demo dataset exists — there
 would be nothing for the tools to read.

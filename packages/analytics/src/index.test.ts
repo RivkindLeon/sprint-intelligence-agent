@@ -1,7 +1,7 @@
 import assert from "node:assert";
 import test from "node:test";
 
-import type { Sprint } from "@sprint-intelligence/domain";
+import type { Sprint, SprintHistory } from "@sprint-intelligence/domain";
 
 import {
   calculateAllocationRiskSummary,
@@ -10,7 +10,87 @@ import {
   calculateDeveloperWorkload,
   calculateReadyTaskSummary,
   calculateSprintProgress,
+  calculateTeamVelocity,
 } from "./index.js";
+
+test("calculateTeamVelocity summarizes completed story points across sprint history", () => {
+  const history: SprintHistory[] = [
+    {
+      id: "history-21",
+      sprintId: "sprint-21",
+      sprintName: "Sprint 21",
+      startedAt: "2026-07-21T09:00:00Z",
+      completedAt: "2026-08-03T17:00:00Z",
+      committedStoryPoints: 62,
+      completedStoryPoints: 48,
+      carriedOverIssueIds: ["OPS-77"],
+    },
+    {
+      id: "history-22",
+      sprintId: "sprint-22",
+      sprintName: "Sprint 22",
+      startedAt: "2026-08-04T09:00:00Z",
+      completedAt: "2026-08-17T17:00:00Z",
+      committedStoryPoints: 57,
+      completedStoryPoints: 52,
+      carriedOverIssueIds: [],
+    },
+    {
+      id: "history-23",
+      sprintId: "sprint-23",
+      sprintName: "Sprint 23",
+      startedAt: "2026-08-18T09:00:00Z",
+      completedAt: "2026-08-31T17:00:00Z",
+      committedStoryPoints: 60,
+      completedStoryPoints: 49,
+      carriedOverIssueIds: ["AUTH-198", "PAY-205"],
+    },
+  ];
+
+  assert.deepStrictEqual(calculateTeamVelocity(history), {
+    sprints: [
+      {
+        sprintId: "sprint-21",
+        sprintName: "Sprint 21",
+        committedStoryPoints: 62,
+        completedStoryPoints: 48,
+        completionRate: 77.42,
+      },
+      {
+        sprintId: "sprint-22",
+        sprintName: "Sprint 22",
+        committedStoryPoints: 57,
+        completedStoryPoints: 52,
+        completionRate: 91.23,
+      },
+      {
+        sprintId: "sprint-23",
+        sprintName: "Sprint 23",
+        committedStoryPoints: 60,
+        completedStoryPoints: 49,
+        completionRate: 81.67,
+      },
+    ],
+    sprintCount: 3,
+    averageCommittedStoryPoints: 59.67,
+    averageCompletedStoryPoints: 49.67,
+    minCompletedStoryPoints: 48,
+    maxCompletedStoryPoints: 52,
+    completionRate: 83.24,
+  });
+});
+
+test("calculateTeamVelocity returns a zero summary without history", () => {
+  assert.deepStrictEqual(calculateTeamVelocity([]), {
+    sprints: [],
+    sprintCount: 0,
+    averageCommittedStoryPoints: 0,
+    averageCompletedStoryPoints: 0,
+    minCompletedStoryPoints: 0,
+    maxCompletedStoryPoints: 0,
+    completionRate: 0,
+  });
+});
 
 test("calculateDependencyCycleRisks reports cycles with issue and dependency evidence", () => {
   const sprint: Sprint = {

@@ -1,4 +1,73 @@
-import type { Sprint, Task } from "@sprint-intelligence/domain";
+import type { Sprint, SprintHistory, Task } from "@sprint-intelligence/domain";
+
+export interface SprintVelocityEntry {
+  sprintId: string;
+  sprintName: string;
+  committedStoryPoints: number;
+  completedStoryPoints: number;
+  completionRate: number;
+}
+
+export interface TeamVelocitySummary {
+  sprints: SprintVelocityEntry[];
+  sprintCount: number;
+  averageCommittedStoryPoints: number;
+  averageCompletedStoryPoints: number;
+  minCompletedStoryPoints: number;
+  maxCompletedStoryPoints: number;
+  completionRate: number;
+}
+
+export function calculateTeamVelocity(
+  history: SprintHistory[],
+): TeamVelocitySummary {
+  const sprints = history.map((sprint) => ({
+    sprintId: sprint.sprintId,
+    sprintName: sprint.sprintName,
+    committedStoryPoints: sprint.committedStoryPoints,
+    completedStoryPoints: sprint.completedStoryPoints,
+    completionRate:
+      sprint.committedStoryPoints === 0
+        ? 0
+        : roundToTwoDecimals(
+            (sprint.completedStoryPoints / sprint.committedStoryPoints) * 100,
+          ),
+  }));
+  const totalCommittedStoryPoints = history.reduce(
+    (sum, sprint) => sum + sprint.committedStoryPoints,
+    0,
+  );
+  const totalCompletedStoryPoints = history.reduce(
+    (sum, sprint) => sum + sprint.completedStoryPoints,
+    0,
+  );
+  const completedStoryPoints = history.map(
+    (sprint) => sprint.completedStoryPoints,
+  );
+
+  return {
+    sprints,
+    sprintCount: history.length,
+    averageCommittedStoryPoints:
+      history.length === 0
+        ? 0
+        : roundToTwoDecimals(totalCommittedStoryPoints / history.length),
+    averageCompletedStoryPoints:
+      history.length === 0
+        ? 0
+        : roundToTwoDecimals(totalCompletedStoryPoints / history.length),
+    minCompletedStoryPoints:
+      completedStoryPoints.length === 0 ? 0 : Math.min(...completedStoryPoints),
+    maxCompletedStoryPoints:
+      completedStoryPoints.length === 0 ? 0 : Math.max(...completedStoryPoints),
+    completionRate:
+      totalCommittedStoryPoints === 0
+        ? 0
+        : roundToTwoDecimals(
+            (totalCompletedStoryPoints / totalCommittedStoryPoints) * 100,
+          ),
+  };
+}
 
 export type WorkloadStatus = "available" | "at_capacity" | "overallocated";
 
