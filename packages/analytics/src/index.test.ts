@@ -1,7 +1,12 @@
 import assert from "node:assert";
 import test from "node:test";
 
-import type { Sprint, SprintHistory } from "@sprint-intelligence/domain";
+import type {
+  Activity,
+  Issue,
+  Sprint,
+  SprintHistory,
+} from "@sprint-intelligence/domain";
 
 import {
   calculateAllocationRiskSummary,
@@ -9,9 +14,169 @@ import {
   calculateDependencyCycleRisks,
   calculateDeveloperWorkload,
   calculateReadyTaskSummary,
+  calculateScopeChange,
   calculateSprintProgress,
   calculateTeamVelocity,
 } from "./index.js";
+
+test("calculateScopeChange reports sprint additions and removals with issue evidence", () => {
+  const issues: Issue[] = [
+    createIssue("CORE-1", 8),
+    createIssue("CORE-2", 5),
+    createIssue("ADDED-1", 3),
+    createIssue("ADDED-2"),
+  ];
+  const sprint: Sprint = {
+    id: "sprint-24",
+    name: "Sprint 24",
+    startDate: "2026-09-01",
+    endDate: "2026-09-14",
+    developers: [],
+    issues,
+    tasks: [],
+  };
+  const activities: Activity[] = [
+    createScopeActivity(
+      "add-1",
+      "ADDED-1",
+      "added_to_sprint",
+      "2026-09-03T11:00:00Z",
+    ),
+    createScopeActivity(
+      "add-2",
+      "ADDED-2",
+      "added_to_sprint",
+      "2026-09-05T10:00:00Z",
+    ),
+    createScopeActivity(
+      "remove-1",
+      "CORE-2",
+      "removed_from_sprint",
+      "2026-09-06T14:00:00Z",
+    ),
+    createScopeActivity(
+      "other-sprint",
+      "CORE-1",
+      "added_to_sprint",
+      "2026-09-04T10:00:00Z",
+      "sprint-99",
+    ),
+    createScopeActivity(
+      "before-start",
+      "CORE-1",
+      "added_to_sprint",
+      "2026-08-31T10:00:00Z",
+    ),
+    {
+      id: "status-change",
+      issueId: "CORE-1",
+      type: "status_changed",
+      occurredAt: "2026-09-04T10:00:00Z",
+      fromValue: "todo",
+      toValue: "in_progress",
+    },
+  ];
+
+  assert.deepStrictEqual(calculateScopeChange(sprint, activities), {
+    changes: [
+      {
+        activityId: "add-1",
+        issueId: "ADDED-1",
+        type: "added_to_sprint",
+        occurredAt: "2026-09-03T11:00:00Z",
+        storyPoints: 3,
+      },
+      {
+        activityId: "add-2",
+        issueId: "ADDED-2",
+        type: "added_to_sprint",
+        occurredAt: "2026-09-05T10:00:00Z",
+        storyPoints: 0,
+      },
+      {
+        activityId: "remove-1",
+        issueId: "CORE-2",
+        type: "removed_from_sprint",
+        occurredAt: "2026-09-06T14:00:00Z",
+        storyPoints: 5,
+      },
+    ],
+    addedIssueCount: 2,
+    addedIssueIds: ["ADDED-1", "ADDED-2"],
+    addedStoryPoints: 3,
+    removedIssueCount: 1,
+    removedIssueIds: ["CORE-2"],
+    removedStoryPoints: 5,
+    netIssueCountChange: 1,
+    netStoryPointChange: -2,
+    initialIssueCount: 3,
+    initialStoryPoints: 18,
+    currentIssueCount: 4,
+    currentStoryPoints: 16,
+    storyPointGrowthPercent: -11.11,
+  });
+});
+
+test("calculateScopeChange returns a zero summary when scope did not change", () => {
+  const sprint: Sprint = {
+    id: "sprint-stable",
+    name: "Stable sprint",
+    startDate: "2026-09-01",
+    endDate: "2026-09-14",
+    developers: [],
+    issues: [createIssue("CORE-1", 5)],
+    tasks: [],
+  };
+
+  assert.deepStrictEqual(calculateScopeChange(sprint, []), {
+    changes: [],
+    addedIssueCount: 0,
+    addedIssueIds: [],
+    addedStoryPoints: 0,
+    removedIssueCount: 0,
+    removedIssueIds: [],
+    removedStoryPoints: 0,
+    netIssueCountChange: 0,
+    netStoryPointChange: 0,
+    initialIssueCount: 1,
+    initialStoryPoints: 5,
+    currentIssueCount: 1,
+    currentStoryPoints: 5,
+    storyPointGrowthPercent: 0,
+  });
+});
+
+function createIssue(id: string, storyPoints?: number): Issue {
+  return {
+    id,
+    title: id,
+    type: "story",
+    status: "todo",
+    storyPoints,
+    createdAt: "2026-08-20T09:00:00Z",
+    updatedAt: "2026-09-01T09:00:00Z",
+    sprintId: "sprint-24",
+    dependencies: [],
+  };
+}
+
+function createScopeActivity(
+  id: string,
+  issueId: string,
+  type: "added_to_sprint" | "removed_from_sprint",
+  occurredAt: string,
+  sprintId = "sprint-24",
+): Activity {
+  return {
+    id,
+    issueId,
+    type,
+    occurredAt,
+    ...(type === "added_to_sprint"
+      ? { toValue: sprintId }
+      : { fromValue: sprintId }),
+  };
+}
 
 test("calculateTeamVelocity summarizes completed story points across sprint history", () => {
   const history: SprintHistory[] = [

@@ -1,4 +1,131 @@
-import type { Sprint, SprintHistory, Task } from "@sprint-intelligence/domain";
+import type {
+  Activity,
+  Issue,
+  Sprint,
+  SprintHistory,
+  Task,
+} from "@sprint-intelligence/domain";
+
+export interface SprintScopeChange {
+  activityId: string;
+  issueId: string;
+  type: "added_to_sprint" | "removed_from_sprint";
+  occurredAt: string;
+  storyPoints: number;
+}
+
+export interface SprintScopeChangeSummary {
+  changes: SprintScopeChange[];
+  addedIssueCount: number;
+  addedIssueIds: string[];
+  addedStoryPoints: number;
+  removedIssueCount: number;
+  removedIssueIds: string[];
+  removedStoryPoints: number;
+  netIssueCountChange: number;
+  netStoryPointChange: number;
+  initialIssueCount: number;
+  initialStoryPoints: number;
+  currentIssueCount: number;
+  currentStoryPoints: number;
+  storyPointGrowthPercent: number;
+}
+
+export function calculateScopeChange(
+  sprint: Sprint,
+  activities: Activity[],
+): SprintScopeChangeSummary {
+  const issues = sprint.issues ?? [];
+  const issuesById = new Map(issues.map((issue) => [issue.id, issue]));
+  const sprintStart = parseIsoDate(sprint.startDate).getTime();
+  const sprintEnd = endOfIsoDate(sprint.endDate).getTime();
+
+  const changes = activities.flatMap((activity) => {
+    if (
+      (activity.type !== "added_to_sprint" &&
+        activity.type !== "removed_from_sprint") ||
+      !activityTargetsSprint(activity, sprint.id) ||
+      !isWithinRange(activity.occurredAt, sprintStart, sprintEnd)
+    ) {
+      return [];
+    }
+
+    const issue = issuesById.get(activity.issueId);
+    return [
+      {
+        activityId: activity.id,
+        issueId: activity.issueId,
+        type: activity.type,
+        occurredAt: activity.occurredAt,
+        storyPoints: issue?.storyPoints ?? 0,
+      } satisfies SprintScopeChange,
+    ];
+  });
+  const additions = changes.filter(
+    (change) => change.type === "added_to_sprint",
+  );
+  const removals = changes.filter(
+    (change) => change.type === "removed_from_sprint",
+  );
+  const currentStoryPoints = sumIssueStoryPoints(issues);
+  const addedStoryPoints = sumScopeChangeStoryPoints(additions);
+  const removedStoryPoints = sumScopeChangeStoryPoints(removals);
+  const netIssueCountChange = additions.length - removals.length;
+  const netStoryPointChange = addedStoryPoints - removedStoryPoints;
+  const initialIssueCount = issues.length - netIssueCountChange;
+  const initialStoryPoints = currentStoryPoints - netStoryPointChange;
+
+  return {
+    changes,
+    addedIssueCount: additions.length,
+    addedIssueIds: additions.map((change) => change.issueId),
+    addedStoryPoints,
+    removedIssueCount: removals.length,
+    removedIssueIds: removals.map((change) => change.issueId),
+    removedStoryPoints,
+    netIssueCountChange,
+    netStoryPointChange,
+    initialIssueCount,
+    initialStoryPoints,
+    currentIssueCount: issues.length,
+    currentStoryPoints,
+    storyPointGrowthPercent:
+      initialStoryPoints === 0
+        ? netStoryPointChange > 0
+          ? 100
+          : 0
+        : roundToTwoDecimals((netStoryPointChange / initialStoryPoints) * 100),
+  };
+}
+
+function activityTargetsSprint(activity: Activity, sprintId: string): boolean {
+  return activity.type === "added_to_sprint"
+    ? activity.toValue === sprintId
+    : activity.fromValue === sprintId;
+}
+
+function isWithinRange(
+  occurredAt: string,
+  startTime: number,
+  endTime: number,
+): boolean {
+  const occurredTime = new Date(occurredAt).getTime();
+  return occurredTime >= startTime && occurredTime <= endTime;
+}
+
+function endOfIsoDate(value: string): Date {
+  const date = parseIsoDate(value);
+  date.setUTCHours(23, 59, 59, 999);
+  return date;
+}
+
+function sumIssueStoryPoints(issues: Issue[]): number {
+  return issues.reduce((sum, issue) => sum + (issue.storyPoints ?? 0), 0);
+}
+
+function sumScopeChangeStoryPoints(changes: SprintScopeChange[]): number {
+  return changes.reduce((sum, change) => sum + change.storyPoints, 0);
+}
 
 export interface SprintVelocityEntry {
   sprintId: string;
