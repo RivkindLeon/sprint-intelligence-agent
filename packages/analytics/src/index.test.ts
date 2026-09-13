@@ -17,6 +17,7 @@ import {
   calculateScopeChange,
   calculateSprintProgress,
   calculateTeamVelocity,
+  findStaleIssues,
 } from "./index.js";
 
 test("calculateScopeChange reports sprint additions and removals with issue evidence", () => {
@@ -255,6 +256,118 @@ test("calculateTeamVelocity returns a zero summary without history", () => {
     maxCompletedStoryPoints: 0,
     completionRate: 0,
   });
+});
+
+test("findStaleIssues reports unfinished issues at or beyond the configured threshold", () => {
+  const sprint: Sprint = {
+    id: "sprint-stale",
+    name: "Stale work sprint",
+    startDate: "2026-09-01",
+    endDate: "2026-09-14",
+    developers: [],
+    tasks: [],
+    issues: [
+      {
+        ...createIssue("STALE-1", 8),
+        title: "Blocked authentication dependency",
+        status: "blocked",
+        assigneeId: "dev-1",
+        updatedAt: "2026-09-05T12:00:00Z",
+      },
+      {
+        ...createIssue("BOUNDARY-1"),
+        status: "in_progress",
+        updatedAt: "2026-09-07T12:00:00Z",
+      },
+      {
+        ...createIssue("FRESH-1", 3),
+        updatedAt: "2026-09-08T12:00:01Z",
+      },
+      {
+        ...createIssue("DONE-1", 5),
+        status: "done",
+        updatedAt: "2026-08-20T09:00:00Z",
+      },
+    ],
+  };
+
+  assert.deepStrictEqual(
+    findStaleIssues(sprint, {
+      referenceDate: "2026-09-10T12:00:00Z",
+      thresholdDays: 3,
+    }),
+    {
+      staleIssues: [
+        {
+          issueId: "STALE-1",
+          issueTitle: "Blocked authentication dependency",
+          status: "blocked",
+          assigneeId: "dev-1",
+          storyPoints: 8,
+          updatedAt: "2026-09-05T12:00:00Z",
+          staleDays: 5,
+        },
+        {
+          issueId: "BOUNDARY-1",
+          issueTitle: "BOUNDARY-1",
+          status: "in_progress",
+          assigneeId: undefined,
+          storyPoints: undefined,
+          updatedAt: "2026-09-07T12:00:00Z",
+          staleDays: 3,
+        },
+      ],
+      staleIssueCount: 2,
+      staleIssueIds: ["STALE-1", "BOUNDARY-1"],
+      staleStoryPoints: 8,
+      thresholdDays: 3,
+      referenceDate: "2026-09-10T12:00:00.000Z",
+    },
+  );
+});
+
+test("findStaleIssues returns an empty summary without stale work", () => {
+  const sprint: Sprint = {
+    id: "sprint-fresh",
+    name: "Fresh work sprint",
+    startDate: "2026-09-01",
+    endDate: "2026-09-14",
+    developers: [],
+    tasks: [],
+  };
+
+  assert.deepStrictEqual(
+    findStaleIssues(sprint, { referenceDate: "2026-09-10T12:00:00Z" }),
+    {
+      staleIssues: [],
+      staleIssueCount: 0,
+      staleIssueIds: [],
+      staleStoryPoints: 0,
+      thresholdDays: 3,
+      referenceDate: "2026-09-10T12:00:00.000Z",
+    },
+  );
+});
+
+test("findStaleIssues rejects invalid thresholds and timestamps", () => {
+  const sprint: Sprint = {
+    id: "sprint-invalid",
+    name: "Invalid inputs",
+    startDate: "2026-09-01",
+    endDate: "2026-09-14",
+    developers: [],
+    tasks: [],
+    issues: [createIssue("ISSUE-1")],
+  };
+
+  assert.throws(
+    () => findStaleIssues(sprint, { thresholdDays: 0 }),
+    /positive integer/,
+  );
+  assert.throws(
+    () => findStaleIssues(sprint, { referenceDate: "not-a-date" }),
+    /Invalid date/,
+  );
 });
 
 test("calculateDependencyCycleRisks reports cycles with issue and dependency evidence", () => {

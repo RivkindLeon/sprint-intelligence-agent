@@ -196,6 +196,81 @@ export function calculateTeamVelocity(
   };
 }
 
+export interface StaleIssue {
+  issueId: string;
+  issueTitle: string;
+  status: Exclude<Issue["status"], "done">;
+  assigneeId?: string;
+  storyPoints?: number;
+  updatedAt: string;
+  staleDays: number;
+}
+
+export interface StaleIssueSummary {
+  staleIssues: StaleIssue[];
+  staleIssueCount: number;
+  staleIssueIds: string[];
+  staleStoryPoints: number;
+  thresholdDays: number;
+  referenceDate: string;
+}
+
+export interface FindStaleIssuesOptions {
+  referenceDate?: string | Date;
+  thresholdDays?: number;
+}
+
+export function findStaleIssues(
+  sprint: Sprint,
+  options: FindStaleIssuesOptions = {},
+): StaleIssueSummary {
+  const referenceDate = parseDateTime(options.referenceDate ?? new Date());
+  const thresholdDays = options.thresholdDays ?? 3;
+
+  if (!Number.isInteger(thresholdDays) || thresholdDays < 1) {
+    throw new RangeError("thresholdDays must be a positive integer");
+  }
+
+  const staleIssues = (sprint.issues ?? []).flatMap((issue) => {
+    if (issue.status === "done") {
+      return [];
+    }
+
+    const updatedAt = parseDateTime(issue.updatedAt);
+    const staleDays = Math.floor(
+      (referenceDate.getTime() - updatedAt.getTime()) / MILLISECONDS_PER_DAY,
+    );
+
+    if (staleDays < thresholdDays) {
+      return [];
+    }
+
+    return [
+      {
+        issueId: issue.id,
+        issueTitle: issue.title,
+        status: issue.status,
+        assigneeId: issue.assigneeId,
+        storyPoints: issue.storyPoints,
+        updatedAt: issue.updatedAt,
+        staleDays,
+      } satisfies StaleIssue,
+    ];
+  });
+
+  return {
+    staleIssues,
+    staleIssueCount: staleIssues.length,
+    staleIssueIds: staleIssues.map((issue) => issue.issueId),
+    staleStoryPoints: staleIssues.reduce(
+      (sum, issue) => sum + (issue.storyPoints ?? 0),
+      0,
+    ),
+    thresholdDays,
+    referenceDate: referenceDate.toISOString(),
+  };
+}
+
 export type WorkloadStatus = "available" | "at_capacity" | "overallocated";
 
 export interface DeveloperWorkload {
@@ -767,6 +842,17 @@ export interface SprintProgressOptions {
 const TASK_STATUSES: Task["status"][] = ["todo", "in_progress", "done"];
 
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
+
+function parseDateTime(value: string | Date): Date {
+  const date =
+    value instanceof Date ? new Date(value.getTime()) : new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    throw new Error(`Invalid date: ${String(value)}`);
+  }
+
+  return date;
+}
 
 export function calculateSprintProgress(
   sprint: Sprint,
