@@ -7,7 +7,7 @@ development job reads this file to decide what to work on next.
 sessions — each run starts with no history of previous runs. If it claims work
 that was not done, the next session builds on a lie.
 
-Last verified against the code: 2026-09-12.
+Last verified against the code: 2026-09-13.
 
 ---
 
@@ -75,8 +75,7 @@ five history records after two consecutive seed runs.
 
 **Status: in progress — roughly half.**
 
-`packages/analytics` is 1108 lines and is the only substantial code in the
-repository. Against the ten functions required by section 7:
+Against the ten functions required by section 7:
 
 | Required                        | State                                        |
 | ------------------------------- | -------------------------------------------- |
@@ -86,7 +85,7 @@ repository. Against the ten functions required by section 7:
 | `findDependencyRisks`           | covered by `calculateDependencyCycleRisks`   |
 | `calculateTeamVelocity`         | done — tested historical story-point summary |
 | `calculateScopeChange`          | done — tested issue and story-point deltas   |
-| `findStaleIssues`               | **missing**                                  |
+| `findStaleIssues`               | done — tested age threshold + issue evidence |
 | `findMissingEstimates`          | **missing**                                  |
 | `findMissingAcceptanceCriteria` | **missing**                                  |
 | `calculateCarryOverRisk`        | **missing**                                  |
@@ -128,13 +127,14 @@ explicit in section 21 that work should proceed milestone by milestone.
 
 Continue with the earliest incomplete milestone: **Milestone 2 — Analytics
 Engine**. Milestone 1 is complete. Implement the next missing required function,
-`findStaleIssues`, with unit tests before proceeding down the table.
+`findMissingEstimates`, with unit tests before proceeding down the table.
 
 Do not start Milestone 3 (AI tools) before the demo dataset exists — there
 would be nothing for the tools to read.
 
 ## Correction for whoever edits the job prompt
 
-The repository now has minimal `apps/api` and `apps/web` applications plus
-`packages/shared`, but still does not have `packages/ai` or `demo`. Do not assume
-the full aspirational structure in section 4 already exists.
+The repository now has minimal `apps/api` and `apps/web` applications,
+`packages/shared`, and the checked-in `demo/sprint` dataset, but it still does
+not have `packages/ai`. Do not assume the full aspirational structure in section
+4 already exists.
