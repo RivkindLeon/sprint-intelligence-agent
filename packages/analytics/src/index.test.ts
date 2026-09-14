@@ -17,6 +17,7 @@ import {
   calculateScopeChange,
   calculateSprintProgress,
   calculateTeamVelocity,
+  findMissingEstimates,
   findStaleIssues,
 } from "./index.js";
 
@@ -255,6 +256,66 @@ test("calculateTeamVelocity returns a zero summary without history", () => {
     minCompletedStoryPoints: 0,
     maxCompletedStoryPoints: 0,
     completionRate: 0,
+  });
+});
+
+test("findMissingEstimates reports issues without story points as evidence", () => {
+  const sprint: Sprint = {
+    id: "sprint-estimates",
+    name: "Estimate audit",
+    startDate: "2026-09-01",
+    endDate: "2026-09-14",
+    developers: [],
+    tasks: [],
+    issues: [
+      {
+        ...createIssue("MISSING-1"),
+        title: "Paginate audit events",
+        type: "task",
+        assigneeId: "dev-1",
+      },
+      { ...createIssue("MISSING-2"), status: "done" },
+      createIssue("ESTIMATED-1", 5),
+      createIssue("ZERO-1", 0),
+    ],
+  };
+
+  assert.deepStrictEqual(findMissingEstimates(sprint), {
+    issues: [
+      {
+        issueId: "MISSING-1",
+        issueTitle: "Paginate audit events",
+        issueType: "task",
+        status: "todo",
+        assigneeId: "dev-1",
+      },
+      {
+        issueId: "MISSING-2",
+        issueTitle: "MISSING-2",
+        issueType: "story",
+        status: "done",
+        assigneeId: undefined,
+      },
+    ],
+    missingEstimateCount: 2,
+    missingEstimateIssueIds: ["MISSING-1", "MISSING-2"],
+  });
+});
+
+test("findMissingEstimates returns an empty summary without sprint issues", () => {
+  const sprint: Sprint = {
+    id: "sprint-empty",
+    name: "Empty sprint",
+    startDate: "2026-09-01",
+    endDate: "2026-09-14",
+    developers: [],
+    tasks: [],
+  };
+
+  assert.deepStrictEqual(findMissingEstimates(sprint), {
+    issues: [],
+    missingEstimateCount: 0,
+    missingEstimateIssueIds: [],
   });
 });
 

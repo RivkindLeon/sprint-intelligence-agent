@@ -220,6 +220,44 @@ export interface FindStaleIssuesOptions {
   thresholdDays?: number;
 }
 
+export interface IssueMissingEstimate {
+  issueId: string;
+  issueTitle: string;
+  issueType: Issue["type"];
+  status: Issue["status"];
+  assigneeId?: string;
+}
+
+export interface MissingEstimateSummary {
+  issues: IssueMissingEstimate[];
+  missingEstimateCount: number;
+  missingEstimateIssueIds: string[];
+}
+
+export function findMissingEstimates(sprint: Sprint): MissingEstimateSummary {
+  const issues = (sprint.issues ?? []).flatMap((issue) => {
+    if (issue.storyPoints !== undefined) {
+      return [];
+    }
+
+    return [
+      {
+        issueId: issue.id,
+        issueTitle: issue.title,
+        issueType: issue.type,
+        status: issue.status,
+        assigneeId: issue.assigneeId,
+      } satisfies IssueMissingEstimate,
+    ];
+  });
+
+  return {
+    issues,
+    missingEstimateCount: issues.length,
+    missingEstimateIssueIds: issues.map((issue) => issue.issueId),
+  };
+}
+
 export function findStaleIssues(
   sprint: Sprint,
   options: FindStaleIssuesOptions = {},

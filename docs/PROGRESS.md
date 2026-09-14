@@ -7,7 +7,7 @@ development job reads this file to decide what to work on next.
 sessions — each run starts with no history of previous runs. If it claims work
 that was not done, the next session builds on a lie.
 
-Last verified against the code: 2026-09-13.
+Last verified against the code: 2026-09-14.
 
 ---
 
@@ -86,7 +86,7 @@ Against the ten functions required by section 7:
 | `calculateTeamVelocity`         | done — tested historical story-point summary |
 | `calculateScopeChange`          | done — tested issue and story-point deltas   |
 | `findStaleIssues`               | done — tested age threshold + issue evidence |
-| `findMissingEstimates`          | **missing**                                  |
+| `findMissingEstimates`          | done — tested issue-level evidence           |
 | `findMissingAcceptanceCriteria` | **missing**                                  |
 | `calculateCarryOverRisk`        | **missing**                                  |
 
@@ -127,7 +127,8 @@ explicit in section 21 that work should proceed milestone by milestone.
 
 Continue with the earliest incomplete milestone: **Milestone 2 — Analytics
 Engine**. Milestone 1 is complete. Implement the next missing required function,
-`findMissingEstimates`, with unit tests before proceeding down the table.
+`findMissingAcceptanceCriteria`, with unit tests before proceeding down the
+table.
 
 Do not start Milestone 3 (AI tools) before the demo dataset exists — there
 would be nothing for the tools to read.
