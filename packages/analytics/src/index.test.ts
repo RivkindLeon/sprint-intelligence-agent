@@ -17,6 +17,7 @@ import {
   calculateScopeChange,
   calculateSprintProgress,
   calculateTeamVelocity,
+  findMissingAcceptanceCriteria,
   findMissingEstimates,
   findStaleIssues,
 } from "./index.js";
@@ -316,6 +317,72 @@ test("findMissingEstimates returns an empty summary without sprint issues", () =
     issues: [],
     missingEstimateCount: 0,
     missingEstimateIssueIds: [],
+  });
+});
+
+test("findMissingAcceptanceCriteria reports blank or absent criteria as evidence", () => {
+  const sprint: Sprint = {
+    id: "sprint-quality",
+    name: "Quality audit",
+    startDate: "2026-09-01",
+    endDate: "2026-09-14",
+    developers: [],
+    tasks: [],
+    issues: [
+      {
+        ...createIssue("MISSING-AC-1", 5),
+        title: "Document token refresh behavior",
+        assigneeId: "dev-1",
+      },
+      {
+        ...createIssue("BLANK-AC-1", 3),
+        type: "bug",
+        status: "done",
+        acceptanceCriteria: "   ",
+      },
+      {
+        ...createIssue("DEFINED-AC-1", 8),
+        acceptanceCriteria: "Refresh succeeds without signing the user out.",
+      },
+    ],
+  };
+
+  assert.deepStrictEqual(findMissingAcceptanceCriteria(sprint), {
+    issues: [
+      {
+        issueId: "MISSING-AC-1",
+        issueTitle: "Document token refresh behavior",
+        issueType: "story",
+        status: "todo",
+        assigneeId: "dev-1",
+      },
+      {
+        issueId: "BLANK-AC-1",
+        issueTitle: "BLANK-AC-1",
+        issueType: "bug",
+        status: "done",
+        assigneeId: undefined,
+      },
+    ],
+    missingAcceptanceCriteriaCount: 2,
+    missingAcceptanceCriteriaIssueIds: ["MISSING-AC-1", "BLANK-AC-1"],
+  });
+});
+
+test("findMissingAcceptanceCriteria returns an empty summary without sprint issues", () => {
+  const sprint: Sprint = {
+    id: "sprint-empty",
+    name: "Empty sprint",
+    startDate: "2026-09-01",
+    endDate: "2026-09-14",
+    developers: [],
+    tasks: [],
+  };
+
+  assert.deepStrictEqual(findMissingAcceptanceCriteria(sprint), {
+    issues: [],
+    missingAcceptanceCriteriaCount: 0,
+    missingAcceptanceCriteriaIssueIds: [],
   });
 });
 

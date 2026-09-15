@@ -7,7 +7,7 @@ development job reads this file to decide what to work on next.
 sessions — each run starts with no history of previous runs. If it claims work
 that was not done, the next session builds on a lie.
 
-Last verified against the code: 2026-09-14.
+Last verified against the code: 2026-09-15.
 
 ---
 
@@ -87,7 +87,7 @@ Against the ten functions required by section 7:
 | `calculateScopeChange`          | done — tested issue and story-point deltas   |
 | `findStaleIssues`               | done — tested age threshold + issue evidence |
 | `findMissingEstimates`          | done — tested issue-level evidence           |
-| `findMissingAcceptanceCriteria` | **missing**                                  |
+| `findMissingAcceptanceCriteria` | done — tested issue-level evidence           |
 | `calculateCarryOverRisk`        | **missing**                                  |
 
 Two extra functions exist that the brief does not ask for:
@@ -126,9 +126,8 @@ with no infrastructure, which is why they kept getting chosen — but the brief 
 explicit in section 21 that work should proceed milestone by milestone.
 
 Continue with the earliest incomplete milestone: **Milestone 2 — Analytics
-Engine**. Milestone 1 is complete. Implement the next missing required function,
-`findMissingAcceptanceCriteria`, with unit tests before proceeding down the
-table.
+Engine**. Milestone 1 is complete. Implement the final missing required function,
+`calculateCarryOverRisk`, with unit tests before proceeding to Milestone 3.
 
 Do not start Milestone 3 (AI tools) before the demo dataset exists — there
 would be nothing for the tools to read.

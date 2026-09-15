@@ -234,6 +234,20 @@ export interface MissingEstimateSummary {
   missingEstimateIssueIds: string[];
 }
 
+export interface IssueMissingAcceptanceCriteria {
+  issueId: string;
+  issueTitle: string;
+  issueType: Issue["type"];
+  status: Issue["status"];
+  assigneeId?: string;
+}
+
+export interface MissingAcceptanceCriteriaSummary {
+  issues: IssueMissingAcceptanceCriteria[];
+  missingAcceptanceCriteriaCount: number;
+  missingAcceptanceCriteriaIssueIds: string[];
+}
+
 export function findMissingEstimates(sprint: Sprint): MissingEstimateSummary {
   const issues = (sprint.issues ?? []).flatMap((issue) => {
     if (issue.storyPoints !== undefined) {
@@ -255,6 +269,32 @@ export function findMissingEstimates(sprint: Sprint): MissingEstimateSummary {
     issues,
     missingEstimateCount: issues.length,
     missingEstimateIssueIds: issues.map((issue) => issue.issueId),
+  };
+}
+
+export function findMissingAcceptanceCriteria(
+  sprint: Sprint,
+): MissingAcceptanceCriteriaSummary {
+  const issues = (sprint.issues ?? []).flatMap((issue) => {
+    if (issue.acceptanceCriteria?.trim()) {
+      return [];
+    }
+
+    return [
+      {
+        issueId: issue.id,
+        issueTitle: issue.title,
+        issueType: issue.type,
+        status: issue.status,
+        assigneeId: issue.assigneeId,
+      } satisfies IssueMissingAcceptanceCriteria,
+    ];
+  });
+
+  return {
+    issues,
+    missingAcceptanceCriteriaCount: issues.length,
+    missingAcceptanceCriteriaIssueIds: issues.map((issue) => issue.issueId),
   };
 }
 
