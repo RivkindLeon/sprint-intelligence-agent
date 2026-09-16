@@ -7,7 +7,7 @@ development job reads this file to decide what to work on next.
 sessions — each run starts with no history of previous runs. If it claims work
 that was not done, the next session builds on a lie.
 
-Last verified against the code: 2026-09-15.
+Last verified against the code: 2026-09-16.
 
 ---
 
@@ -73,7 +73,7 @@ five history records after two consecutive seed runs.
 
 ## Milestone 2 — Analytics Engine
 
-**Status: in progress — roughly half.**
+**Status: complete.**
 
 Against the ten functions required by section 7:
 
@@ -88,7 +88,7 @@ Against the ten functions required by section 7:
 | `findStaleIssues`               | done — tested age threshold + issue evidence |
 | `findMissingEstimates`          | done — tested issue-level evidence           |
 | `findMissingAcceptanceCriteria` | done — tested issue-level evidence           |
-| `calculateCarryOverRisk`        | **missing**                                  |
+| `calculateCarryOverRisk`        | done — tested velocity forecast + evidence   |
 
 Two extra functions exist that the brief does not ask for:
 `calculateReadyTaskSummary` and `calculateAllocationRiskSummary`. They are
@@ -125,9 +125,9 @@ Milestone 1 are largely untouched. Analytics functions are pure and easy to add
 with no infrastructure, which is why they kept getting chosen — but the brief is
 explicit in section 21 that work should proceed milestone by milestone.
 
-Continue with the earliest incomplete milestone: **Milestone 2 — Analytics
-Engine**. Milestone 1 is complete. Implement the final missing required function,
-`calculateCarryOverRisk`, with unit tests before proceeding to Milestone 3.
+Continue with the earliest incomplete milestone: **Milestone 3 — AI Tools**.
+Milestone 2 is complete. Create `packages/ai`, expose the analytics through
+small validated typed tools, and add the strict `SprintAnalysis` output schema.
 
 Do not start Milestone 3 (AI tools) before the demo dataset exists — there
 would be nothing for the tools to read.
