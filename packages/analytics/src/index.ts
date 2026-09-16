@@ -196,6 +196,122 @@ export function calculateTeamVelocity(
   };
 }
 
+export type CarryOverRiskLevel = "none" | "low" | "medium" | "high";
+
+export interface CarryOverRiskIssue {
+  issueId: string;
+  issueTitle: string;
+  status: Exclude<Issue["status"], "done">;
+  assigneeId?: string;
+  storyPoints?: number;
+  dependencyIds: string[];
+  previousCarryOverCount: number;
+}
+
+export interface CarryOverRiskSummary {
+  riskLevel: CarryOverRiskLevel;
+  atRiskIssues: CarryOverRiskIssue[];
+  atRiskIssueCount: number;
+  atRiskIssueIds: string[];
+  committedStoryPoints: number;
+  completedStoryPoints: number;
+  unfinishedStoryPoints: number;
+  unestimatedUnfinishedIssueCount: number;
+  historicalAverageCompletedStoryPoints: number;
+  forecastCompletedStoryPoints: number;
+  forecastCarryOverStoryPoints: number;
+  forecastCarryOverPercent: number;
+}
+
+/**
+ * Forecasts carry-over from the team's historical average completed velocity.
+ * When the forecast leaves work unfinished, every unfinished issue is returned
+ * as traceable evidence; issue ordering is not treated as an undocumented
+ * priority signal. Unestimated work is evidence but contributes zero points.
+ */
+export function calculateCarryOverRisk(
+  sprint: Sprint,
+  history: SprintHistory[],
+): CarryOverRiskSummary {
+  const issues = sprint.issues ?? [];
+  const unfinishedIssues = issues.filter((issue) => issue.status !== "done");
+  const committedStoryPoints = sumIssueStoryPoints(issues);
+  const completedStoryPoints = sumIssueStoryPoints(
+    issues.filter((issue) => issue.status === "done"),
+  );
+  const unfinishedStoryPoints = sumIssueStoryPoints(unfinishedIssues);
+  const historicalAverageCompletedStoryPoints =
+    calculateTeamVelocity(history).averageCompletedStoryPoints;
+  const forecastCompletedStoryPoints = Math.min(
+    committedStoryPoints,
+    Math.max(completedStoryPoints, historicalAverageCompletedStoryPoints),
+  );
+  const forecastCarryOverStoryPoints = Math.max(
+    committedStoryPoints - forecastCompletedStoryPoints,
+    0,
+  );
+  const forecastCarryOverPercent =
+    committedStoryPoints === 0
+      ? 0
+      : roundToTwoDecimals(
+          (forecastCarryOverStoryPoints / committedStoryPoints) * 100,
+        );
+  const previousCarryOverCounts = new Map<string, number>();
+
+  for (const historicalSprint of history) {
+    for (const issueId of historicalSprint.carriedOverIssueIds) {
+      previousCarryOverCounts.set(
+        issueId,
+        (previousCarryOverCounts.get(issueId) ?? 0) + 1,
+      );
+    }
+  }
+
+  const atRiskIssues =
+    forecastCarryOverStoryPoints > 0 ||
+    unfinishedIssues.some((issue) => issue.storyPoints === undefined)
+      ? unfinishedIssues.map((issue): CarryOverRiskIssue => ({
+          issueId: issue.id,
+          issueTitle: issue.title,
+          status: issue.status as Exclude<Issue["status"], "done">,
+          assigneeId: issue.assigneeId,
+          storyPoints: issue.storyPoints,
+          dependencyIds: [...issue.dependencies],
+          previousCarryOverCount: previousCarryOverCounts.get(issue.id) ?? 0,
+        }))
+      : [];
+
+  return {
+    riskLevel: determineCarryOverRiskLevel(
+      forecastCarryOverPercent,
+      unfinishedIssues.some((issue) => issue.storyPoints === undefined),
+    ),
+    atRiskIssues,
+    atRiskIssueCount: atRiskIssues.length,
+    atRiskIssueIds: atRiskIssues.map((issue) => issue.issueId),
+    committedStoryPoints,
+    completedStoryPoints,
+    unfinishedStoryPoints,
+    unestimatedUnfinishedIssueCount: unfinishedIssues.filter(
+      (issue) => issue.storyPoints === undefined,
+    ).length,
+    historicalAverageCompletedStoryPoints,
+    forecastCompletedStoryPoints,
+    forecastCarryOverStoryPoints,
+    forecastCarryOverPercent,
+  };
+}
+
+function determineCarryOverRiskLevel(
+  forecastCarryOverPercent: number,
+  hasUnestimatedWork: boolean,
+): CarryOverRiskLevel {
+  if (forecastCarryOverPercent >= 25) return "high";
+  if (forecastCarryOverPercent >= 10) return "medium";
+  if (forecastCarryOverPercent > 0 || hasUnestimatedWork) return "low";
+  return "none";
+}
+
 export interface StaleIssue {
   issueId: string;
   issueTitle: string;

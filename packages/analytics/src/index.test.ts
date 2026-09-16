@@ -11,6 +11,7 @@ import type {
 import {
   calculateAllocationRiskSummary,
   calculateBlockedTaskRisks,
+  calculateCarryOverRisk,
   calculateDependencyCycleRisks,
   calculateDeveloperWorkload,
   calculateReadyTaskSummary,
@@ -21,6 +22,139 @@ import {
   findMissingEstimates,
   findStaleIssues,
 } from "./index.js";
+
+test("calculateCarryOverRisk forecasts excess commitment with issue evidence", () => {
+  const sprint: Sprint = {
+    id: "sprint-24",
+    name: "Sprint 24",
+    startDate: "2026-09-01",
+    endDate: "2026-09-14",
+    developers: [],
+    tasks: [],
+    issues: [
+      { ...createIssue("DONE-1", 20), status: "done" },
+      {
+        ...createIssue("AUTH-198", 20),
+        status: "in_progress",
+        assigneeId: "dev-1",
+      },
+      {
+        ...createIssue("PAY-205", 15),
+        status: "blocked",
+        dependencies: ["AUTH-198"],
+      },
+      createIssue("TODO-1", 5),
+    ],
+  };
+  const history: SprintHistory[] = [
+    createHistory("sprint-22", 40, ["AUTH-198"]),
+    createHistory("sprint-23", 50, ["AUTH-198", "PAY-205"]),
+  ];
+
+  assert.deepStrictEqual(calculateCarryOverRisk(sprint, history), {
+    riskLevel: "high",
+    atRiskIssues: [
+      {
+        issueId: "AUTH-198",
+        issueTitle: "AUTH-198",
+        status: "in_progress",
+        assigneeId: "dev-1",
+        storyPoints: 20,
+        dependencyIds: [],
+        previousCarryOverCount: 2,
+      },
+      {
+        issueId: "PAY-205",
+        issueTitle: "PAY-205",
+        status: "blocked",
+        assigneeId: undefined,
+        storyPoints: 15,
+        dependencyIds: ["AUTH-198"],
+        previousCarryOverCount: 1,
+      },
+      {
+        issueId: "TODO-1",
+        issueTitle: "TODO-1",
+        status: "todo",
+        assigneeId: undefined,
+        storyPoints: 5,
+        dependencyIds: [],
+        previousCarryOverCount: 0,
+      },
+    ],
+    atRiskIssueCount: 3,
+    atRiskIssueIds: ["AUTH-198", "PAY-205", "TODO-1"],
+    committedStoryPoints: 60,
+    completedStoryPoints: 20,
+    unfinishedStoryPoints: 40,
+    unestimatedUnfinishedIssueCount: 0,
+    historicalAverageCompletedStoryPoints: 45,
+    forecastCompletedStoryPoints: 45,
+    forecastCarryOverStoryPoints: 15,
+    forecastCarryOverPercent: 25,
+  });
+});
+
+test("calculateCarryOverRisk flags unestimated unfinished work even within velocity", () => {
+  const sprint: Sprint = {
+    id: "sprint-24",
+    name: "Sprint 24",
+    startDate: "2026-09-01",
+    endDate: "2026-09-14",
+    developers: [],
+    tasks: [],
+    issues: [createIssue("UNKNOWN-1")],
+  };
+
+  const summary = calculateCarryOverRisk(sprint, [
+    createHistory("sprint-23", 50),
+  ]);
+
+  assert.strictEqual(summary.riskLevel, "low");
+  assert.strictEqual(summary.forecastCarryOverStoryPoints, 0);
+  assert.strictEqual(summary.unestimatedUnfinishedIssueCount, 1);
+  assert.deepStrictEqual(summary.atRiskIssueIds, ["UNKNOWN-1"]);
+});
+
+test("calculateCarryOverRisk returns no risk when forecast capacity covers the sprint", () => {
+  const sprint: Sprint = {
+    id: "sprint-24",
+    name: "Sprint 24",
+    startDate: "2026-09-01",
+    endDate: "2026-09-14",
+    developers: [],
+    tasks: [],
+    issues: [
+      { ...createIssue("DONE-1", 20), status: "done" },
+      createIssue("TODO-1", 10),
+    ],
+  };
+
+  const summary = calculateCarryOverRisk(sprint, [
+    createHistory("sprint-23", 40),
+  ]);
+
+  assert.strictEqual(summary.riskLevel, "none");
+  assert.strictEqual(summary.forecastCompletedStoryPoints, 30);
+  assert.deepStrictEqual(summary.atRiskIssues, []);
+});
+
+function createHistory(
+  sprintId: string,
+  completedStoryPoints: number,
+  carriedOverIssueIds: string[] = [],
+): SprintHistory {
+  return {
+    id: `history-${sprintId}`,
+    sprintId,
+    sprintName: sprintId,
+    startedAt: "2026-08-01T09:00:00Z",
+    completedAt: "2026-08-14T17:00:00Z",
+    committedStoryPoints: completedStoryPoints + 10,
+    completedStoryPoints,
+    carriedOverIssueIds,
+  };
+}
 
 test("calculateScopeChange reports sprint additions and removals with issue evidence", () => {
   const issues: Issue[] = [
