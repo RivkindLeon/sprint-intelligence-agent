@@ -7,7 +7,7 @@ development job reads this file to decide what to work on next.
 sessions — each run starts with no history of previous runs. If it claims work
 that was not done, the next session builds on a lie.
 
-Last verified against the code: 2026-09-16.
+Last verified against the code: 2026-09-17.
 
 ---
 
@@ -96,8 +96,13 @@ tested and harmless, but they were added instead of the six missing ones.
 
 ## Milestone 3 — AI Tools
 
-**Status: not started.** No `packages/ai`, no typed tool layer, no
-`SprintAnalysis` output schema.
+**Status: in progress.** `packages/ai` now defines and tests the strict
+`SprintAnalysis` output schema. Health scores and confidence values have bounded
+ranges, unknown fields are rejected, and every risk must include at least one
+evidence item identifying an issue or metric.
+
+Not yet implemented: the typed tool layer and its tests. No LLM orchestration
+or provider dependency has been added; that belongs to Milestone 4.
 
 ## Milestone 4 — Sprint Agent
 
@@ -126,8 +131,9 @@ with no infrastructure, which is why they kept getting chosen — but the brief 
 explicit in section 21 that work should proceed milestone by milestone.
 
 Continue with the earliest incomplete milestone: **Milestone 3 — AI Tools**.
-Milestone 2 is complete. Create `packages/ai`, expose the analytics through
-small validated typed tools, and add the strict `SprintAnalysis` output schema.
+Milestone 2 is complete and the strict `SprintAnalysis` schema exists. Next,
+expose the analytics through small validated typed tools, beginning with the
+sprint overview/data-access boundary rather than a giant aggregate tool.
 
 Do not start Milestone 3 (AI tools) before the demo dataset exists — there
 would be nothing for the tools to read.
