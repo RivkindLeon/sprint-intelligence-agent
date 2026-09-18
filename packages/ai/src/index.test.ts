@@ -1,7 +1,69 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { sprintAnalysisSchema } from "./index.js";
+import type { Sprint } from "@sprint-intelligence/domain";
+
+import { createGetSprintOverviewTool, sprintAnalysisSchema } from "./index.js";
+
+const sprint: Sprint = {
+  id: "sprint-24",
+  name: "Sprint 24",
+  goal: "Ship secure invitations",
+  startDate: "2026-09-01",
+  endDate: "2026-09-14",
+  developers: [
+    { id: "dev-1", name: "Leon", capacityHoursPerWeek: 40 },
+    { id: "dev-2", name: "Anna", capacityHoursPerWeek: 40 },
+  ],
+  issues: [
+    {
+      id: "AUTH-1",
+      title: "Invitation API",
+      type: "story",
+      status: "done",
+      assigneeId: "dev-1",
+      storyPoints: 5,
+      createdAt: "2026-08-20T09:00:00Z",
+      updatedAt: "2026-09-05T09:00:00Z",
+      sprintId: "sprint-24",
+      dependencies: [],
+    },
+    {
+      id: "AUTH-2",
+      title: "Invitation screen",
+      type: "story",
+      status: "in_progress",
+      assigneeId: "dev-2",
+      storyPoints: 3,
+      createdAt: "2026-08-21T09:00:00Z",
+      updatedAt: "2026-09-06T09:00:00Z",
+      sprintId: "sprint-24",
+      dependencies: ["AUTH-1"],
+    },
+    {
+      id: "AUTH-3",
+      title: "Invitation audit",
+      type: "task",
+      status: "todo",
+      createdAt: "2026-08-22T09:00:00Z",
+      updatedAt: "2026-09-01T09:00:00Z",
+      sprintId: "sprint-24",
+      dependencies: [],
+    },
+    {
+      id: "AUTH-4",
+      title: "Invitation key rotation",
+      type: "task",
+      status: "blocked",
+      storyPoints: 2,
+      createdAt: "2026-08-23T09:00:00Z",
+      updatedAt: "2026-09-02T09:00:00Z",
+      sprintId: "sprint-24",
+      dependencies: [],
+    },
+  ],
+  tasks: [],
+};
 
 const validAnalysis = {
   healthScore: 68,
@@ -66,5 +128,55 @@ describe("SprintAnalysis output schema", () => {
     });
 
     assert.equal(result.success, false);
+  });
+});
+
+describe("getSprintOverview tool", () => {
+  const repository = {
+    async getSprintById(sprintId: string) {
+      return sprintId === sprint.id ? sprint : undefined;
+    },
+  };
+  const tool = createGetSprintOverviewTool(repository);
+
+  it("returns a compact deterministic sprint summary", async () => {
+    assert.deepEqual(await tool.execute({ sprintId: sprint.id }), {
+      sprintId: "sprint-24",
+      name: "Sprint 24",
+      goal: "Ship secure invitations",
+      startDate: "2026-09-01",
+      endDate: "2026-09-14",
+      developerCount: 2,
+      issueCount: 4,
+      estimatedIssueCount: 3,
+      totalStoryPoints: 10,
+      completedStoryPoints: 5,
+      issueCountsByStatus: {
+        todo: 1,
+        in_progress: 1,
+        blocked: 1,
+        done: 1,
+      },
+    });
+  });
+
+  it("validates input before querying the repository", async () => {
+    let queryCount = 0;
+    const validatingTool = createGetSprintOverviewTool({
+      async getSprintById() {
+        queryCount += 1;
+        return sprint;
+      },
+    });
+
+    await assert.rejects(validatingTool.execute({ sprintId: "", extra: true }));
+    assert.equal(queryCount, 0);
+  });
+
+  it("reports a missing sprint explicitly", async () => {
+    await assert.rejects(
+      tool.execute({ sprintId: "missing" }),
+      /Sprint not found: missing/,
+    );
   });
 });

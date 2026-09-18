@@ -94,6 +94,9 @@ importers:
 
   packages/ai:
     dependencies:
+      '@sprint-intelligence/domain':
+        specifier: workspace:*
+        version: link:../domain
       zod:
         specifier: ^4.1.5
         version: 4.5.4
