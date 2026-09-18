@@ -1,5 +1,114 @@
 import { z } from "zod";
 
+import type { IssueStatus, Sprint } from "@sprint-intelligence/domain";
+
+export interface SprintRepository {
+  getSprintById(sprintId: string): Promise<Sprint | undefined>;
+}
+
+export const getSprintOverviewInputSchema = z
+  .object({
+    sprintId: z.string().trim().min(1),
+  })
+  .strict();
+
+const issueStatusCountSchema = z
+  .object({
+    todo: z.number().int().nonnegative(),
+    in_progress: z.number().int().nonnegative(),
+    blocked: z.number().int().nonnegative(),
+    done: z.number().int().nonnegative(),
+  })
+  .strict();
+
+export const getSprintOverviewOutputSchema = z
+  .object({
+    sprintId: z.string().min(1),
+    name: z.string().min(1),
+    goal: z.string().min(1).optional(),
+    startDate: z.string().min(1),
+    endDate: z.string().min(1),
+    developerCount: z.number().int().nonnegative(),
+    issueCount: z.number().int().nonnegative(),
+    estimatedIssueCount: z.number().int().nonnegative(),
+    totalStoryPoints: z.number().nonnegative(),
+    completedStoryPoints: z.number().nonnegative(),
+    issueCountsByStatus: issueStatusCountSchema,
+  })
+  .strict();
+
+export type GetSprintOverviewInput = z.infer<
+  typeof getSprintOverviewInputSchema
+>;
+export type GetSprintOverviewOutput = z.infer<
+  typeof getSprintOverviewOutputSchema
+>;
+
+export interface SprintTool<TInput, TOutput> {
+  description: string;
+  inputSchema: z.ZodType<TInput>;
+  outputSchema: z.ZodType<TOutput>;
+  execute(input: unknown): Promise<TOutput>;
+}
+
+const ISSUE_STATUSES: IssueStatus[] = [
+  "todo",
+  "in_progress",
+  "blocked",
+  "done",
+];
+
+export function createGetSprintOverviewTool(
+  repository: SprintRepository,
+): SprintTool<GetSprintOverviewInput, GetSprintOverviewOutput> {
+  return {
+    description:
+      "Return compact identifying, schedule, staffing, issue, and story-point facts for one sprint.",
+    inputSchema: getSprintOverviewInputSchema,
+    outputSchema: getSprintOverviewOutputSchema,
+    async execute(input: unknown) {
+      const { sprintId } = getSprintOverviewInputSchema.parse(input);
+      const sprint = await repository.getSprintById(sprintId);
+
+      if (sprint === undefined) {
+        throw new Error(`Sprint not found: ${sprintId}`);
+      }
+
+      const issues = sprint.issues ?? [];
+      const issueCountsByStatus = Object.fromEntries(
+        ISSUE_STATUSES.map((status) => [
+          status,
+          issues.filter((issue) => issue.status === status).length,
+        ]),
+      ) as Record<IssueStatus, number>;
+      const estimatedIssues = issues.filter(
+        (issue) => issue.storyPoints !== undefined,
+      );
+
+      return getSprintOverviewOutputSchema.parse({
+        sprintId: sprint.id,
+        name: sprint.name,
+        goal: sprint.goal,
+        startDate: sprint.startDate,
+        endDate: sprint.endDate,
+        developerCount: sprint.developers.length,
+        issueCount: issues.length,
+        estimatedIssueCount: estimatedIssues.length,
+        totalStoryPoints: estimatedIssues.reduce(
+          (total, issue) => total + issue.storyPoints!,
+          0,
+        ),
+        completedStoryPoints: issues.reduce(
+          (total, issue) =>
+            issue.status === "done" ? total + (issue.storyPoints ?? 0) : total,
+          0,
+        ),
+        issueCountsByStatus,
+      });
+    },
+  };
+}
+
 export const riskSeveritySchema = z.enum(["low", "medium", "high", "critical"]);
 
 export const riskCategorySchema = z.enum([
