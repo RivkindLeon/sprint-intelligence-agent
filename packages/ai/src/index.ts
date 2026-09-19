@@ -1,9 +1,13 @@
 import { z } from "zod";
 
-import type { IssueStatus, Sprint } from "@sprint-intelligence/domain";
+import type { Issue, IssueStatus, Sprint } from "@sprint-intelligence/domain";
 
 export interface SprintRepository {
   getSprintById(sprintId: string): Promise<Sprint | undefined>;
+}
+
+export interface IssueRepository {
+  getIssueById(issueId: string): Promise<Issue | undefined>;
 }
 
 export const getSprintOverviewInputSchema = z
@@ -105,6 +109,53 @@ export function createGetSprintOverviewTool(
         ),
         issueCountsByStatus,
       });
+    },
+  };
+}
+
+export const getIssueInputSchema = z
+  .object({
+    issueId: z.string().trim().min(1),
+  })
+  .strict();
+
+export const getIssueOutputSchema = z
+  .object({
+    id: z.string().min(1),
+    title: z.string().min(1),
+    description: z.string().optional(),
+    type: z.enum(["story", "bug", "task"]),
+    status: z.enum(["todo", "in_progress", "blocked", "done"]),
+    assigneeId: z.string().min(1).optional(),
+    storyPoints: z.number().nonnegative().optional(),
+    createdAt: z.string().min(1),
+    updatedAt: z.string().min(1),
+    sprintId: z.string().min(1),
+    acceptanceCriteria: z.string().optional(),
+    dependencies: z.array(z.string().min(1)),
+  })
+  .strict();
+
+export type GetIssueInput = z.infer<typeof getIssueInputSchema>;
+export type GetIssueOutput = z.infer<typeof getIssueOutputSchema>;
+
+export function createGetIssueTool(
+  repository: IssueRepository,
+): SprintTool<GetIssueInput, GetIssueOutput> {
+  return {
+    description:
+      "Return the canonical details and dependency evidence for one issue.",
+    inputSchema: getIssueInputSchema,
+    outputSchema: getIssueOutputSchema,
+    async execute(input: unknown) {
+      const { issueId } = getIssueInputSchema.parse(input);
+      const issue = await repository.getIssueById(issueId);
+
+      if (issue === undefined) {
+        throw new Error(`Issue not found: ${issueId}`);
+      }
+
+      return getIssueOutputSchema.parse(issue);
     },
   };
 }

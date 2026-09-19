@@ -3,7 +3,11 @@ import { describe, it } from "node:test";
 
 import type { Sprint } from "@sprint-intelligence/domain";
 
-import { createGetSprintOverviewTool, sprintAnalysisSchema } from "./index.js";
+import {
+  createGetIssueTool,
+  createGetSprintOverviewTool,
+  sprintAnalysisSchema,
+} from "./index.js";
 
 const sprint: Sprint = {
   id: "sprint-24",
@@ -177,6 +181,51 @@ describe("getSprintOverview tool", () => {
     await assert.rejects(
       tool.execute({ sprintId: "missing" }),
       /Sprint not found: missing/,
+    );
+  });
+});
+
+describe("getIssue tool", () => {
+  const issue = sprint.issues![1]!;
+  const repository = {
+    async getIssueById(issueId: string) {
+      return issueId === issue.id ? issue : undefined;
+    },
+  };
+  const tool = createGetIssueTool(repository);
+
+  it("returns canonical issue details with dependency evidence", async () => {
+    assert.deepEqual(await tool.execute({ issueId: "AUTH-2" }), {
+      id: "AUTH-2",
+      title: "Invitation screen",
+      type: "story",
+      status: "in_progress",
+      assigneeId: "dev-2",
+      storyPoints: 3,
+      createdAt: "2026-08-21T09:00:00Z",
+      updatedAt: "2026-09-06T09:00:00Z",
+      sprintId: "sprint-24",
+      dependencies: ["AUTH-1"],
+    });
+  });
+
+  it("validates input before querying the repository", async () => {
+    let queryCount = 0;
+    const validatingTool = createGetIssueTool({
+      async getIssueById() {
+        queryCount += 1;
+        return issue;
+      },
+    });
+
+    await assert.rejects(validatingTool.execute({ issueId: "", extra: true }));
+    assert.equal(queryCount, 0);
+  });
+
+  it("reports a missing issue explicitly", async () => {
+    await assert.rejects(
+      tool.execute({ issueId: "missing" }),
+      /Issue not found: missing/,
     );
   });
 });

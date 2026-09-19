@@ -7,7 +7,7 @@ development job reads this file to decide what to work on next.
 sessions — each run starts with no history of previous runs. If it claims work
 that was not done, the next session builds on a lie.
 
-Last verified against the code: 2026-09-18.
+Last verified against the code: 2026-09-19.
 
 ---
 
@@ -106,7 +106,12 @@ schemas, reads through an injected sprint repository, and returns only compact
 schedule, staffing, status-count, and story-point facts. Tests cover its
 deterministic output, invalid input, and a missing sprint.
 
-Not yet implemented: the other eight typed tools listed in section 8. No LLM
+The `getIssue` tool now validates strict input and output schemas, reads through
+an injected issue repository, and returns canonical issue details including the
+exact dependency identifiers needed for evidence. Tests cover its output,
+validation before repository access, and a missing issue.
+
+Not yet implemented: the other seven typed tools listed in section 8. No LLM
 orchestration or provider dependency has been added; that belongs to Milestone 4.
 
 ## Milestone 4 — Sprint Agent
@@ -137,9 +142,9 @@ explicit in section 21 that work should proceed milestone by milestone.
 
 Continue with the earliest incomplete milestone: **Milestone 3 — AI Tools**.
 Milestone 2 is complete, the strict `SprintAnalysis` schema exists, and
-`getSprintOverview` establishes the repository-backed typed tool pattern. Next,
-add `getIssue` as the smallest issue-evidence lookup tool; do not build a giant
-aggregate tool.
+`getSprintOverview` and `getIssue` establish the repository-backed typed tool
+pattern. Next, add `getIssuesByStatus` as the smallest collection lookup tool;
+do not build a giant aggregate tool.
 
 Do not start Milestone 3 (AI tools) before the demo dataset exists — there
 would be nothing for the tools to read.
