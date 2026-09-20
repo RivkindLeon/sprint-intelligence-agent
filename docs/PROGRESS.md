@@ -7,7 +7,7 @@ development job reads this file to decide what to work on next.
 sessions — each run starts with no history of previous runs. If it claims work
 that was not done, the next session builds on a lie.
 
-Last verified against the code: 2026-09-19.
+Last verified against the code: 2026-09-20.
 
 ---
 
@@ -111,7 +111,13 @@ an injected issue repository, and returns canonical issue details including the
 exact dependency identifiers needed for evidence. Tests cover its output,
 validation before repository access, and a missing issue.
 
-Not yet implemented: the other seven typed tools listed in section 8. No LLM
+The `getIssuesByStatus` tool now validates a sprint ID and canonical issue
+status, reads through an injected collection repository, and returns compact
+issue evidence including identifiers, assignment, estimates, update times, and
+dependencies. Tests cover populated and empty results, validation before
+repository access, and rejection of mismatched repository data.
+
+Not yet implemented: the other six typed tools listed in section 8. No LLM
 orchestration or provider dependency has been added; that belongs to Milestone 4.
 
 ## Milestone 4 — Sprint Agent
@@ -142,9 +148,9 @@ explicit in section 21 that work should proceed milestone by milestone.
 
 Continue with the earliest incomplete milestone: **Milestone 3 — AI Tools**.
 Milestone 2 is complete, the strict `SprintAnalysis` schema exists, and
-`getSprintOverview` and `getIssue` establish the repository-backed typed tool
-pattern. Next, add `getIssuesByStatus` as the smallest collection lookup tool;
-do not build a giant aggregate tool.
+`getSprintOverview`, `getIssue`, and `getIssuesByStatus` establish the
+repository-backed typed tool pattern. Next, add `getDeveloperWorkload`; do not
+build a giant aggregate tool.
 
 Do not start Milestone 3 (AI tools) before the demo dataset exists — there
 would be nothing for the tools to read.
@@ -152,6 +158,5 @@ would be nothing for the tools to read.
 ## Correction for whoever edits the job prompt
 
 The repository now has minimal `apps/api` and `apps/web` applications,
-`packages/shared`, and the checked-in `demo/sprint` dataset, but it still does
-not have `packages/ai`. Do not assume the full aspirational structure in section
-4 already exists.
+`packages/shared`, the checked-in `demo/sprint` dataset, and `packages/ai`.
+Do not assume the full aspirational structure in section 4 already exists.

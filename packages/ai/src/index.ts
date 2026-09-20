@@ -10,6 +10,10 @@ export interface IssueRepository {
   getIssueById(issueId: string): Promise<Issue | undefined>;
 }
 
+export interface IssueCollectionRepository {
+  getIssuesByStatus(sprintId: string, status: IssueStatus): Promise<Issue[]>;
+}
+
 export const getSprintOverviewInputSchema = z
   .object({
     sprintId: z.string().trim().min(1),
@@ -156,6 +160,81 @@ export function createGetIssueTool(
       }
 
       return getIssueOutputSchema.parse(issue);
+    },
+  };
+}
+
+export const getIssuesByStatusInputSchema = z
+  .object({
+    sprintId: z.string().trim().min(1),
+    status: z.enum(["todo", "in_progress", "blocked", "done"]),
+  })
+  .strict();
+
+const issueByStatusSchema = z
+  .object({
+    id: z.string().min(1),
+    title: z.string().min(1),
+    type: z.enum(["story", "bug", "task"]),
+    status: z.enum(["todo", "in_progress", "blocked", "done"]),
+    assigneeId: z.string().min(1).optional(),
+    storyPoints: z.number().nonnegative().optional(),
+    updatedAt: z.string().min(1),
+    dependencies: z.array(z.string().min(1)),
+  })
+  .strict();
+
+export const getIssuesByStatusOutputSchema = z
+  .object({
+    sprintId: z.string().min(1),
+    status: z.enum(["todo", "in_progress", "blocked", "done"]),
+    issues: z.array(issueByStatusSchema),
+  })
+  .strict();
+
+export type GetIssuesByStatusInput = z.infer<
+  typeof getIssuesByStatusInputSchema
+>;
+export type GetIssuesByStatusOutput = z.infer<
+  typeof getIssuesByStatusOutputSchema
+>;
+
+export function createGetIssuesByStatusTool(
+  repository: IssueCollectionRepository,
+): SprintTool<GetIssuesByStatusInput, GetIssuesByStatusOutput> {
+  return {
+    description:
+      "Return compact issue evidence for one status within one sprint.",
+    inputSchema: getIssuesByStatusInputSchema,
+    outputSchema: getIssuesByStatusOutputSchema,
+    async execute(input: unknown) {
+      const { sprintId, status } = getIssuesByStatusInputSchema.parse(input);
+      const issues = await repository.getIssuesByStatus(sprintId, status);
+
+      if (
+        issues.some(
+          (issue) => issue.sprintId !== sprintId || issue.status !== status,
+        )
+      ) {
+        throw new Error(
+          `Issue repository returned data outside sprint ${sprintId} and status ${status}`,
+        );
+      }
+
+      return getIssuesByStatusOutputSchema.parse({
+        sprintId,
+        status,
+        issues: issues.map((issue) => ({
+          id: issue.id,
+          title: issue.title,
+          type: issue.type,
+          status: issue.status,
+          assigneeId: issue.assigneeId,
+          storyPoints: issue.storyPoints,
+          updatedAt: issue.updatedAt,
+          dependencies: issue.dependencies,
+        })),
+      });
     },
   };
 }
