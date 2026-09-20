@@ -5,6 +5,7 @@ import type { Sprint } from "@sprint-intelligence/domain";
 
 import {
   createGetIssueTool,
+  createGetIssuesByStatusTool,
   createGetSprintOverviewTool,
   sprintAnalysisSchema,
 } from "./index.js";
@@ -226,6 +227,85 @@ describe("getIssue tool", () => {
     await assert.rejects(
       tool.execute({ issueId: "missing" }),
       /Issue not found: missing/,
+    );
+  });
+});
+
+describe("getIssuesByStatus tool", () => {
+  const repository = {
+    async getIssuesByStatus(sprintId: string, status: string) {
+      return sprint.issues!.filter(
+        (issue) => issue.sprintId === sprintId && issue.status === status,
+      );
+    },
+  };
+  const tool = createGetIssuesByStatusTool(repository);
+
+  it("returns compact issue evidence for the requested sprint and status", async () => {
+    assert.deepEqual(
+      await tool.execute({ sprintId: sprint.id, status: "in_progress" }),
+      {
+        sprintId: "sprint-24",
+        status: "in_progress",
+        issues: [
+          {
+            id: "AUTH-2",
+            title: "Invitation screen",
+            type: "story",
+            status: "in_progress",
+            assigneeId: "dev-2",
+            storyPoints: 3,
+            updatedAt: "2026-09-06T09:00:00Z",
+            dependencies: ["AUTH-1"],
+          },
+        ],
+      },
+    );
+  });
+
+  it("returns an empty collection when no issues have the requested status", async () => {
+    assert.deepEqual(
+      await tool.execute({ sprintId: "missing", status: "done" }),
+      { sprintId: "missing", status: "done", issues: [] },
+    );
+  });
+
+  it("validates input before querying the repository", async () => {
+    let queryCount = 0;
+    const validatingTool = createGetIssuesByStatusTool({
+      async getIssuesByStatus() {
+        queryCount += 1;
+        return [];
+      },
+    });
+
+    await assert.rejects(
+      validatingTool.execute({
+        sprintId: sprint.id,
+        status: "review",
+        extra: true,
+      }),
+    );
+    assert.equal(queryCount, 0);
+  });
+
+  it("rejects repository results outside the requested sprint or status", async () => {
+    const mismatchedStatusTool = createGetIssuesByStatusTool({
+      async getIssuesByStatus() {
+        return [sprint.issues![0]!];
+      },
+    });
+    const mismatchedSprintTool = createGetIssuesByStatusTool({
+      async getIssuesByStatus() {
+        return [{ ...sprint.issues![0]!, sprintId: "other-sprint" }];
+      },
+    });
+
+    await assert.rejects(
+      mismatchedStatusTool.execute({ sprintId: sprint.id, status: "blocked" }),
+    );
+    await assert.rejects(
+      mismatchedSprintTool.execute({ sprintId: sprint.id, status: "done" }),
     );
   });
 });
