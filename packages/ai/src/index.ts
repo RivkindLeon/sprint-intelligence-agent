@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { calculateDeveloperWorkload } from "@sprint-intelligence/analytics";
 import type { Issue, IssueStatus, Sprint } from "@sprint-intelligence/domain";
 
 export interface SprintRepository {
@@ -234,6 +235,69 @@ export function createGetIssuesByStatusTool(
           updatedAt: issue.updatedAt,
           dependencies: issue.dependencies,
         })),
+      });
+    },
+  };
+}
+
+export const getDeveloperWorkloadInputSchema = z
+  .object({
+    sprintId: z.string().trim().min(1),
+  })
+  .strict();
+
+const developerWorkloadSchema = z
+  .object({
+    developerId: z.string().min(1),
+    developerName: z.string().min(1),
+    capacityHours: z.number().nonnegative(),
+    assignedHours: z.number().nonnegative(),
+    taskCount: z.number().int().nonnegative(),
+    taskIds: z.array(z.string().min(1)),
+    remainingCapacityHours: z.number(),
+    overCapacityHours: z.number().nonnegative(),
+    utilizationPercent: z.number().nonnegative(),
+    status: z.enum(["available", "at_capacity", "overallocated"]),
+  })
+  .strict();
+
+export const getDeveloperWorkloadOutputSchema = z
+  .object({
+    sprintId: z.string().min(1),
+    workloads: z.array(developerWorkloadSchema),
+    totalCapacityHours: z.number().nonnegative(),
+    totalAssignedHours: z.number().nonnegative(),
+    totalUnassignedHours: z.number().nonnegative(),
+    unassignedTaskIds: z.array(z.string().min(1)),
+  })
+  .strict();
+
+export type GetDeveloperWorkloadInput = z.infer<
+  typeof getDeveloperWorkloadInputSchema
+>;
+export type GetDeveloperWorkloadOutput = z.infer<
+  typeof getDeveloperWorkloadOutputSchema
+>;
+
+export function createGetDeveloperWorkloadTool(
+  repository: SprintRepository,
+): SprintTool<GetDeveloperWorkloadInput, GetDeveloperWorkloadOutput> {
+  return {
+    description:
+      "Return deterministic developer capacity, utilization, assigned-task evidence, and unassigned work for one sprint.",
+    inputSchema: getDeveloperWorkloadInputSchema,
+    outputSchema: getDeveloperWorkloadOutputSchema,
+    async execute(input: unknown) {
+      const { sprintId } = getDeveloperWorkloadInputSchema.parse(input);
+      const sprint = await repository.getSprintById(sprintId);
+
+      if (sprint === undefined) {
+        throw new Error(`Sprint not found: ${sprintId}`);
+      }
+
+      return getDeveloperWorkloadOutputSchema.parse({
+        sprintId: sprint.id,
+        ...calculateDeveloperWorkload(sprint),
       });
     },
   };

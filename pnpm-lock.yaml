@@ -94,6 +94,9 @@ importers:
 
   packages/ai:
     dependencies:
+      '@sprint-intelligence/analytics':
+        specifier: workspace:*
+        version: link:../analytics
       '@sprint-intelligence/domain':
         specifier: workspace:*
         version: link:../domain

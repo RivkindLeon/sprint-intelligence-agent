@@ -4,6 +4,7 @@ import { describe, it } from "node:test";
 import type { Sprint } from "@sprint-intelligence/domain";
 
 import {
+  createGetDeveloperWorkloadTool,
   createGetIssueTool,
   createGetIssuesByStatusTool,
   createGetSprintOverviewTool,
@@ -306,6 +307,105 @@ describe("getIssuesByStatus tool", () => {
     );
     await assert.rejects(
       mismatchedSprintTool.execute({ sprintId: sprint.id, status: "done" }),
+    );
+  });
+});
+
+describe("getDeveloperWorkload tool", () => {
+  const sprintWithWorkload: Sprint = {
+    ...sprint,
+    developers: [
+      { id: "dev-1", name: "Leon", capacityHoursPerWeek: 30 },
+      { id: "dev-2", name: "Anna", capacityHoursPerWeek: 20 },
+    ],
+    tasks: [
+      {
+        id: "task-1",
+        title: "Invitation API",
+        assigneeId: "dev-1",
+        estimateHours: 18,
+        status: "in_progress",
+        dependencies: [],
+      },
+      {
+        id: "task-2",
+        title: "Invitation audit",
+        assigneeId: "dev-1",
+        estimateHours: 16,
+        status: "todo",
+        dependencies: ["task-1"],
+      },
+      {
+        id: "task-3",
+        title: "Invitation documentation",
+        estimateHours: 5,
+        status: "todo",
+        dependencies: [],
+      },
+    ],
+  };
+  const repository = {
+    async getSprintById(sprintId: string) {
+      return sprintId === sprintWithWorkload.id
+        ? sprintWithWorkload
+        : undefined;
+    },
+  };
+  const tool = createGetDeveloperWorkloadTool(repository);
+
+  it("returns deterministic workload metrics with task evidence", async () => {
+    assert.deepEqual(await tool.execute({ sprintId: sprintWithWorkload.id }), {
+      sprintId: "sprint-24",
+      workloads: [
+        {
+          developerId: "dev-1",
+          developerName: "Leon",
+          capacityHours: 30,
+          assignedHours: 34,
+          taskCount: 2,
+          taskIds: ["task-1", "task-2"],
+          remainingCapacityHours: -4,
+          overCapacityHours: 4,
+          utilizationPercent: 113.33,
+          status: "overallocated",
+        },
+        {
+          developerId: "dev-2",
+          developerName: "Anna",
+          capacityHours: 20,
+          assignedHours: 0,
+          taskCount: 0,
+          taskIds: [],
+          remainingCapacityHours: 20,
+          overCapacityHours: 0,
+          utilizationPercent: 0,
+          status: "available",
+        },
+      ],
+      totalCapacityHours: 50,
+      totalAssignedHours: 39,
+      totalUnassignedHours: 5,
+      unassignedTaskIds: ["task-3"],
+    });
+  });
+
+  it("validates input before querying the repository", async () => {
+    let queryCount = 0;
+    const validatingTool = createGetDeveloperWorkloadTool({
+      async getSprintById() {
+        queryCount += 1;
+        return sprintWithWorkload;
+      },
+    });
+
+    await assert.rejects(validatingTool.execute({ sprintId: "", extra: true }));
+    assert.equal(queryCount, 0);
+  });
+
+  it("reports a missing sprint explicitly", async () => {
+    await assert.rejects(
+      tool.execute({ sprintId: "missing" }),
+      /Sprint not found: missing/,
     );
   });
 });
