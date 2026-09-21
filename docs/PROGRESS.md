@@ -7,7 +7,7 @@ development job reads this file to decide what to work on next.
 sessions — each run starts with no history of previous runs. If it claims work
 that was not done, the next session builds on a lie.
 
-Last verified against the code: 2026-09-20.
+Last verified against the code: 2026-09-21.
 
 ---
 
@@ -117,7 +117,13 @@ issue evidence including identifiers, assignment, estimates, update times, and
 dependencies. Tests cover populated and empty results, validation before
 repository access, and rejection of mismatched repository data.
 
-Not yet implemented: the other six typed tools listed in section 8. No LLM
+The `getDeveloperWorkload` tool now validates a sprint ID, runs the existing
+deterministic workload analytics over repository data, and returns per-developer
+capacity/utilization with exact assigned and unassigned task IDs as evidence.
+Tests cover overload, available capacity, unassigned work, validation before
+repository access, and a missing sprint.
+
+Not yet implemented: the other five typed tools listed in section 8. No LLM
 orchestration or provider dependency has been added; that belongs to Milestone 4.
 
 ## Milestone 4 — Sprint Agent
@@ -148,9 +154,9 @@ explicit in section 21 that work should proceed milestone by milestone.
 
 Continue with the earliest incomplete milestone: **Milestone 3 — AI Tools**.
 Milestone 2 is complete, the strict `SprintAnalysis` schema exists, and
-`getSprintOverview`, `getIssue`, and `getIssuesByStatus` establish the
-repository-backed typed tool pattern. Next, add `getDeveloperWorkload`; do not
-build a giant aggregate tool.
+`getSprintOverview`, `getIssue`, `getIssuesByStatus`, and
+`getDeveloperWorkload` establish the repository-backed typed tool pattern.
+Next, add `getVelocityHistory`; do not build a giant aggregate tool.
 
 Do not start Milestone 3 (AI tools) before the demo dataset exists — there
 would be nothing for the tools to read.
