@@ -1,13 +1,14 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import type { Sprint } from "@sprint-intelligence/domain";
+import type { Sprint, SprintHistory } from "@sprint-intelligence/domain";
 
 import {
   createGetDeveloperWorkloadTool,
   createGetIssueTool,
   createGetIssuesByStatusTool,
   createGetSprintOverviewTool,
+  createGetVelocityHistoryTool,
   sprintAnalysisSchema,
 } from "./index.js";
 
@@ -407,5 +408,90 @@ describe("getDeveloperWorkload tool", () => {
       tool.execute({ sprintId: "missing" }),
       /Sprint not found: missing/,
     );
+  });
+});
+
+describe("getVelocityHistory tool", () => {
+  const history: SprintHistory[] = [
+    {
+      id: "history-22",
+      sprintId: "sprint-22",
+      sprintName: "Sprint 22",
+      startedAt: "2026-08-04T09:00:00Z",
+      completedAt: "2026-08-17T17:00:00Z",
+      committedStoryPoints: 40,
+      completedStoryPoints: 32,
+      carriedOverIssueIds: ["AUTH-1"],
+    },
+    {
+      id: "history-23",
+      sprintId: "sprint-23",
+      sprintName: "Sprint 23",
+      startedAt: "2026-08-18T09:00:00Z",
+      completedAt: "2026-08-31T17:00:00Z",
+      committedStoryPoints: 50,
+      completedStoryPoints: 43,
+      carriedOverIssueIds: [],
+    },
+  ];
+  const repository = {
+    async getSprintHistory(sprintId: string) {
+      return sprintId === sprint.id ? history : [];
+    },
+  };
+  const tool = createGetVelocityHistoryTool(repository);
+
+  it("returns deterministic historical velocity metrics", async () => {
+    assert.deepEqual(await tool.execute({ sprintId: sprint.id }), {
+      sprintId: "sprint-24",
+      sprints: [
+        {
+          sprintId: "sprint-22",
+          sprintName: "Sprint 22",
+          committedStoryPoints: 40,
+          completedStoryPoints: 32,
+          completionRate: 80,
+        },
+        {
+          sprintId: "sprint-23",
+          sprintName: "Sprint 23",
+          committedStoryPoints: 50,
+          completedStoryPoints: 43,
+          completionRate: 86,
+        },
+      ],
+      sprintCount: 2,
+      averageCommittedStoryPoints: 45,
+      averageCompletedStoryPoints: 37.5,
+      minCompletedStoryPoints: 32,
+      maxCompletedStoryPoints: 43,
+      completionRate: 83.33,
+    });
+  });
+
+  it("returns a zero summary when no sprint history exists", async () => {
+    assert.deepEqual(await tool.execute({ sprintId: "new-sprint" }), {
+      sprintId: "new-sprint",
+      sprints: [],
+      sprintCount: 0,
+      averageCommittedStoryPoints: 0,
+      averageCompletedStoryPoints: 0,
+      minCompletedStoryPoints: 0,
+      maxCompletedStoryPoints: 0,
+      completionRate: 0,
+    });
+  });
+
+  it("validates input before querying the repository", async () => {
+    let queryCount = 0;
+    const validatingTool = createGetVelocityHistoryTool({
+      async getSprintHistory() {
+        queryCount += 1;
+        return history;
+      },
+    });
+
+    await assert.rejects(validatingTool.execute({ sprintId: "", extra: true }));
+    assert.equal(queryCount, 0);
   });
 });

@@ -1,7 +1,15 @@
 import { z } from "zod";
 
-import { calculateDeveloperWorkload } from "@sprint-intelligence/analytics";
-import type { Issue, IssueStatus, Sprint } from "@sprint-intelligence/domain";
+import {
+  calculateDeveloperWorkload,
+  calculateTeamVelocity,
+} from "@sprint-intelligence/analytics";
+import type {
+  Issue,
+  IssueStatus,
+  Sprint,
+  SprintHistory,
+} from "@sprint-intelligence/domain";
 
 export interface SprintRepository {
   getSprintById(sprintId: string): Promise<Sprint | undefined>;
@@ -13,6 +21,10 @@ export interface IssueRepository {
 
 export interface IssueCollectionRepository {
   getIssuesByStatus(sprintId: string, status: IssueStatus): Promise<Issue[]>;
+}
+
+export interface VelocityHistoryRepository {
+  getSprintHistory(sprintId: string): Promise<SprintHistory[]>;
 }
 
 export const getSprintOverviewInputSchema = z
@@ -298,6 +310,62 @@ export function createGetDeveloperWorkloadTool(
       return getDeveloperWorkloadOutputSchema.parse({
         sprintId: sprint.id,
         ...calculateDeveloperWorkload(sprint),
+      });
+    },
+  };
+}
+
+export const getVelocityHistoryInputSchema = z
+  .object({
+    sprintId: z.string().trim().min(1),
+  })
+  .strict();
+
+const sprintVelocityEntrySchema = z
+  .object({
+    sprintId: z.string().min(1),
+    sprintName: z.string().min(1),
+    committedStoryPoints: z.number().nonnegative(),
+    completedStoryPoints: z.number().nonnegative(),
+    completionRate: z.number().nonnegative(),
+  })
+  .strict();
+
+export const getVelocityHistoryOutputSchema = z
+  .object({
+    sprintId: z.string().min(1),
+    sprints: z.array(sprintVelocityEntrySchema),
+    sprintCount: z.number().int().nonnegative(),
+    averageCommittedStoryPoints: z.number().nonnegative(),
+    averageCompletedStoryPoints: z.number().nonnegative(),
+    minCompletedStoryPoints: z.number().nonnegative(),
+    maxCompletedStoryPoints: z.number().nonnegative(),
+    completionRate: z.number().nonnegative(),
+  })
+  .strict();
+
+export type GetVelocityHistoryInput = z.infer<
+  typeof getVelocityHistoryInputSchema
+>;
+export type GetVelocityHistoryOutput = z.infer<
+  typeof getVelocityHistoryOutputSchema
+>;
+
+export function createGetVelocityHistoryTool(
+  repository: VelocityHistoryRepository,
+): SprintTool<GetVelocityHistoryInput, GetVelocityHistoryOutput> {
+  return {
+    description:
+      "Return deterministic historical sprint velocity and completion metrics for the team associated with one sprint.",
+    inputSchema: getVelocityHistoryInputSchema,
+    outputSchema: getVelocityHistoryOutputSchema,
+    async execute(input: unknown) {
+      const { sprintId } = getVelocityHistoryInputSchema.parse(input);
+      const history = await repository.getSprintHistory(sprintId);
+
+      return getVelocityHistoryOutputSchema.parse({
+        sprintId,
+        ...calculateTeamVelocity(history),
       });
     },
   };
