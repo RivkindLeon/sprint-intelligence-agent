@@ -8,6 +8,7 @@ import {
   createGetIssueTool,
   createGetIssuesByStatusTool,
   createGetSprintOverviewTool,
+  createGetSprintScopeChangesTool,
   createGetVelocityHistoryTool,
   sprintAnalysisSchema,
 } from "./index.js";
@@ -493,5 +494,149 @@ describe("getVelocityHistory tool", () => {
 
     await assert.rejects(validatingTool.execute({ sprintId: "", extra: true }));
     assert.equal(queryCount, 0);
+  });
+});
+
+describe("getSprintScopeChanges tool", () => {
+  const activities = [
+    {
+      id: "activity-1",
+      issueId: "AUTH-4",
+      type: "added_to_sprint" as const,
+      occurredAt: "2026-09-03T10:00:00Z",
+      toValue: sprint.id,
+    },
+    {
+      id: "activity-2",
+      issueId: "AUTH-2",
+      type: "removed_from_sprint" as const,
+      occurredAt: "2026-09-04T10:00:00Z",
+      fromValue: sprint.id,
+    },
+  ];
+  const repository = {
+    async getSprintById(sprintId: string) {
+      return sprintId === sprint.id ? sprint : undefined;
+    },
+    async getSprintActivities(sprintId: string) {
+      return sprintId === sprint.id ? activities : [];
+    },
+  };
+  const tool = createGetSprintScopeChangesTool(repository);
+
+  it("returns deterministic scope metrics with issue and activity evidence", async () => {
+    assert.deepEqual(await tool.execute({ sprintId: sprint.id }), {
+      sprintId: "sprint-24",
+      changes: [
+        {
+          activityId: "activity-1",
+          issueId: "AUTH-4",
+          type: "added_to_sprint",
+          occurredAt: "2026-09-03T10:00:00Z",
+          storyPoints: 2,
+        },
+        {
+          activityId: "activity-2",
+          issueId: "AUTH-2",
+          type: "removed_from_sprint",
+          occurredAt: "2026-09-04T10:00:00Z",
+          storyPoints: 3,
+        },
+      ],
+      addedIssueCount: 1,
+      addedIssueIds: ["AUTH-4"],
+      addedStoryPoints: 2,
+      removedIssueCount: 1,
+      removedIssueIds: ["AUTH-2"],
+      removedStoryPoints: 3,
+      netIssueCountChange: 0,
+      netStoryPointChange: -1,
+      initialIssueCount: 4,
+      initialStoryPoints: 11,
+      currentIssueCount: 4,
+      currentStoryPoints: 10,
+      storyPointGrowthPercent: -9.09,
+    });
+  });
+
+  it("returns a zero-change summary when no scope activities exist", async () => {
+    const noChangesTool = createGetSprintScopeChangesTool({
+      async getSprintById() {
+        return sprint;
+      },
+      async getSprintActivities() {
+        return [];
+      },
+    });
+
+    assert.deepEqual(await noChangesTool.execute({ sprintId: sprint.id }), {
+      sprintId: "sprint-24",
+      changes: [],
+      addedIssueCount: 0,
+      addedIssueIds: [],
+      addedStoryPoints: 0,
+      removedIssueCount: 0,
+      removedIssueIds: [],
+      removedStoryPoints: 0,
+      netIssueCountChange: 0,
+      netStoryPointChange: 0,
+      initialIssueCount: 4,
+      initialStoryPoints: 10,
+      currentIssueCount: 4,
+      currentStoryPoints: 10,
+      storyPointGrowthPercent: 0,
+    });
+  });
+
+  it("validates input before querying the repository", async () => {
+    let queryCount = 0;
+    const validatingTool = createGetSprintScopeChangesTool({
+      async getSprintById() {
+        queryCount += 1;
+        return sprint;
+      },
+      async getSprintActivities() {
+        queryCount += 1;
+        return activities;
+      },
+    });
+
+    await assert.rejects(validatingTool.execute({ sprintId: "", extra: true }));
+    assert.equal(queryCount, 0);
+  });
+
+  it("reports a missing sprint before querying activities", async () => {
+    let activityQueryCount = 0;
+    const missingSprintTool = createGetSprintScopeChangesTool({
+      async getSprintById() {
+        return undefined;
+      },
+      async getSprintActivities() {
+        activityQueryCount += 1;
+        return [];
+      },
+    });
+
+    await assert.rejects(
+      missingSprintTool.execute({ sprintId: "missing" }),
+      /Sprint not found: missing/,
+    );
+    assert.equal(activityQueryCount, 0);
+  });
+
+  it("rejects scope activities targeting another sprint", async () => {
+    const mismatchedActivityTool = createGetSprintScopeChangesTool({
+      async getSprintById() {
+        return sprint;
+      },
+      async getSprintActivities() {
+        return [{ ...activities[0]!, toValue: "other-sprint" }];
+      },
+    });
+
+    await assert.rejects(
+      mismatchedActivityTool.execute({ sprintId: sprint.id }),
+      /Activity repository returned data outside sprint sprint-24/,
+    );
   });
 });

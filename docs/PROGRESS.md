@@ -7,7 +7,7 @@ development job reads this file to decide what to work on next.
 sessions — each run starts with no history of previous runs. If it claims work
 that was not done, the next session builds on a lie.
 
-Last verified against the code: 2026-09-22.
+Last verified against the code: 2026-09-23.
 
 ---
 
@@ -129,7 +129,13 @@ velocity summary with per-sprint committed/completed point evidence. Tests
 cover representative history, empty history, and validation before repository
 access.
 
-Not yet implemented: the other four typed tools listed in section 8. No LLM
+The `getSprintScopeChanges` tool now validates a sprint ID, reads the sprint
+and its activities through an injected repository, and returns the existing
+deterministic scope-change analytics with exact issue and activity evidence.
+Tests cover additions and removals, an unchanged sprint, input validation, a
+missing sprint, and repository data outside the requested sprint.
+
+Not yet implemented: the other three typed tools listed in section 8. No LLM
 orchestration or provider dependency has been added; that belongs to Milestone 4.
 
 ## Milestone 4 — Sprint Agent
@@ -160,9 +166,10 @@ explicit in section 21 that work should proceed milestone by milestone.
 
 Continue with the earliest incomplete milestone: **Milestone 3 — AI Tools**.
 Milestone 2 is complete, the strict `SprintAnalysis` schema exists, and
-`getSprintOverview`, `getIssue`, `getIssuesByStatus`, and
-`getDeveloperWorkload` establish the repository-backed typed tool pattern.
-Next, add `getSprintScopeChanges`; do not build a giant aggregate tool.
+`getSprintOverview`, `getIssue`, `getIssuesByStatus`,
+`getDeveloperWorkload`, `getVelocityHistory`, and `getSprintScopeChanges`
+establish the repository-backed typed tool pattern. Next, add
+`getDependencyRisks`; do not build a giant aggregate tool.
 
 Do not start Milestone 3 (AI tools) before the demo dataset exists — there
 would be nothing for the tools to read.

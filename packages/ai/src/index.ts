@@ -2,9 +2,11 @@ import { z } from "zod";
 
 import {
   calculateDeveloperWorkload,
+  calculateScopeChange,
   calculateTeamVelocity,
 } from "@sprint-intelligence/analytics";
 import type {
+  Activity,
   Issue,
   IssueStatus,
   Sprint,
@@ -25,6 +27,10 @@ export interface IssueCollectionRepository {
 
 export interface VelocityHistoryRepository {
   getSprintHistory(sprintId: string): Promise<SprintHistory[]>;
+}
+
+export interface SprintScopeChangeRepository extends SprintRepository {
+  getSprintActivities(sprintId: string): Promise<Activity[]>;
 }
 
 export const getSprintOverviewInputSchema = z
@@ -366,6 +372,88 @@ export function createGetVelocityHistoryTool(
       return getVelocityHistoryOutputSchema.parse({
         sprintId,
         ...calculateTeamVelocity(history),
+      });
+    },
+  };
+}
+
+export const getSprintScopeChangesInputSchema = z
+  .object({
+    sprintId: z.string().trim().min(1),
+  })
+  .strict();
+
+const sprintScopeChangeEntrySchema = z
+  .object({
+    activityId: z.string().min(1),
+    issueId: z.string().min(1),
+    type: z.enum(["added_to_sprint", "removed_from_sprint"]),
+    occurredAt: z.string().min(1),
+    storyPoints: z.number().nonnegative(),
+  })
+  .strict();
+
+export const getSprintScopeChangesOutputSchema = z
+  .object({
+    sprintId: z.string().min(1),
+    changes: z.array(sprintScopeChangeEntrySchema),
+    addedIssueCount: z.number().int().nonnegative(),
+    addedIssueIds: z.array(z.string().min(1)),
+    addedStoryPoints: z.number().nonnegative(),
+    removedIssueCount: z.number().int().nonnegative(),
+    removedIssueIds: z.array(z.string().min(1)),
+    removedStoryPoints: z.number().nonnegative(),
+    netIssueCountChange: z.number().int(),
+    netStoryPointChange: z.number(),
+    initialIssueCount: z.number().int().nonnegative(),
+    initialStoryPoints: z.number().nonnegative(),
+    currentIssueCount: z.number().int().nonnegative(),
+    currentStoryPoints: z.number().nonnegative(),
+    storyPointGrowthPercent: z.number(),
+  })
+  .strict();
+
+export type GetSprintScopeChangesInput = z.infer<
+  typeof getSprintScopeChangesInputSchema
+>;
+export type GetSprintScopeChangesOutput = z.infer<
+  typeof getSprintScopeChangesOutputSchema
+>;
+
+export function createGetSprintScopeChangesTool(
+  repository: SprintScopeChangeRepository,
+): SprintTool<GetSprintScopeChangesInput, GetSprintScopeChangesOutput> {
+  return {
+    description:
+      "Return deterministic sprint scope additions and removals with exact issue and activity evidence.",
+    inputSchema: getSprintScopeChangesInputSchema,
+    outputSchema: getSprintScopeChangesOutputSchema,
+    async execute(input: unknown) {
+      const { sprintId } = getSprintScopeChangesInputSchema.parse(input);
+      const sprint = await repository.getSprintById(sprintId);
+
+      if (sprint === undefined) {
+        throw new Error(`Sprint not found: ${sprintId}`);
+      }
+
+      const activities = await repository.getSprintActivities(sprintId);
+      if (
+        activities.some(
+          (activity) =>
+            (activity.type === "added_to_sprint" &&
+              activity.toValue !== sprintId) ||
+            (activity.type === "removed_from_sprint" &&
+              activity.fromValue !== sprintId),
+        )
+      ) {
+        throw new Error(
+          `Activity repository returned data outside sprint ${sprintId}`,
+        );
+      }
+
+      return getSprintScopeChangesOutputSchema.parse({
+        sprintId: sprint.id,
+        ...calculateScopeChange(sprint, activities),
       });
     },
   };
