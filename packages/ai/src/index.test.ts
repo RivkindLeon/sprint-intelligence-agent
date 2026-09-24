@@ -4,6 +4,7 @@ import { describe, it } from "node:test";
 import type { Sprint, SprintHistory } from "@sprint-intelligence/domain";
 
 import {
+  createGetDependencyRisksTool,
   createGetDeveloperWorkloadTool,
   createGetIssueTool,
   createGetIssuesByStatusTool,
@@ -637,6 +638,102 @@ describe("getSprintScopeChanges tool", () => {
     await assert.rejects(
       mismatchedActivityTool.execute({ sprintId: sprint.id }),
       /Activity repository returned data outside sprint sprint-24/,
+    );
+  });
+});
+
+describe("getDependencyRisks tool", () => {
+  const sprintWithDependencyCycle: Sprint = {
+    ...sprint,
+    tasks: [
+      {
+        id: "AUTH-198",
+        title: "Create invitation tokens",
+        assigneeId: "dev-1",
+        estimateHours: 8,
+        status: "in_progress",
+        dependencies: ["AUTH-231"],
+      },
+      {
+        id: "AUTH-231",
+        title: "Send invitation emails",
+        assigneeId: "dev-2",
+        estimateHours: 5,
+        status: "todo",
+        dependencies: ["AUTH-198"],
+      },
+      {
+        id: "AUTH-250",
+        title: "Document invitations",
+        estimateHours: 2,
+        status: "todo",
+        dependencies: [],
+      },
+    ],
+  };
+  const repository = {
+    async getSprintById(sprintId: string) {
+      return sprintId === sprint.id ? sprintWithDependencyCycle : undefined;
+    },
+  };
+  const tool = createGetDependencyRisksTool(repository);
+
+  it("returns dependency cycles with exact task and edge evidence", async () => {
+    assert.deepEqual(await tool.execute({ sprintId: sprint.id }), {
+      sprintId: "sprint-24",
+      risks: [
+        {
+          riskId: "dependency-cycle:AUTH-198:AUTH-231",
+          taskIds: ["AUTH-198", "AUTH-231"],
+          dependencyEdges: [
+            { taskId: "AUTH-198", dependencyId: "AUTH-231" },
+            { taskId: "AUTH-231", dependencyId: "AUTH-198" },
+          ],
+          hoursAtRisk: 13,
+          reason: "AUTH-198->AUTH-231, AUTH-231->AUTH-198",
+        },
+      ],
+      cycleCount: 1,
+      affectedTaskCount: 2,
+      affectedTaskIds: ["AUTH-198", "AUTH-231"],
+      totalHoursAtRisk: 13,
+    });
+  });
+
+  it("returns an empty risk summary when dependencies are acyclic", async () => {
+    const acyclicTool = createGetDependencyRisksTool({
+      async getSprintById() {
+        return { ...sprint, tasks: sprintWithDependencyCycle.tasks.slice(2) };
+      },
+    });
+
+    assert.deepEqual(await acyclicTool.execute({ sprintId: sprint.id }), {
+      sprintId: "sprint-24",
+      risks: [],
+      cycleCount: 0,
+      affectedTaskCount: 0,
+      affectedTaskIds: [],
+      totalHoursAtRisk: 0,
+    });
+  });
+
+  it("validates input before querying the repository", async () => {
+    let queryCount = 0;
+    const validatingTool = createGetDependencyRisksTool({
+      async getSprintById() {
+        queryCount += 1;
+        return sprintWithDependencyCycle;
+      },
+    });
+
+    await assert.rejects(validatingTool.execute({ sprintId: "", extra: true }));
+    assert.equal(queryCount, 0);
+  });
+
+  it("reports a missing sprint explicitly", async () => {
+    await assert.rejects(
+      tool.execute({ sprintId: "missing" }),
+      /Sprint not found: missing/,
     );
   });
 });

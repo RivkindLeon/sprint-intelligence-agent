@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import {
+  calculateDependencyCycleRisks,
   calculateDeveloperWorkload,
   calculateScopeChange,
   calculateTeamVelocity,
@@ -31,6 +32,71 @@ export interface VelocityHistoryRepository {
 
 export interface SprintScopeChangeRepository extends SprintRepository {
   getSprintActivities(sprintId: string): Promise<Activity[]>;
+}
+
+export const getDependencyRisksInputSchema = z
+  .object({
+    sprintId: z.string().trim().min(1),
+  })
+  .strict();
+
+const dependencyEdgeSchema = z
+  .object({
+    taskId: z.string().min(1),
+    dependencyId: z.string().min(1),
+  })
+  .strict();
+
+const dependencyCycleRiskSchema = z
+  .object({
+    riskId: z.string().min(1),
+    taskIds: z.array(z.string().min(1)).min(1),
+    dependencyEdges: z.array(dependencyEdgeSchema).min(1),
+    hoursAtRisk: z.number().nonnegative(),
+    reason: z.string().min(1),
+  })
+  .strict();
+
+export const getDependencyRisksOutputSchema = z
+  .object({
+    sprintId: z.string().min(1),
+    risks: z.array(dependencyCycleRiskSchema),
+    cycleCount: z.number().int().nonnegative(),
+    affectedTaskCount: z.number().int().nonnegative(),
+    affectedTaskIds: z.array(z.string().min(1)),
+    totalHoursAtRisk: z.number().nonnegative(),
+  })
+  .strict();
+
+export type GetDependencyRisksInput = z.infer<
+  typeof getDependencyRisksInputSchema
+>;
+export type GetDependencyRisksOutput = z.infer<
+  typeof getDependencyRisksOutputSchema
+>;
+
+export function createGetDependencyRisksTool(
+  repository: SprintRepository,
+): SprintTool<GetDependencyRisksInput, GetDependencyRisksOutput> {
+  return {
+    description:
+      "Return deterministic dependency-cycle risks with exact task and dependency-edge evidence for one sprint.",
+    inputSchema: getDependencyRisksInputSchema,
+    outputSchema: getDependencyRisksOutputSchema,
+    async execute(input: unknown) {
+      const { sprintId } = getDependencyRisksInputSchema.parse(input);
+      const sprint = await repository.getSprintById(sprintId);
+
+      if (sprint === undefined) {
+        throw new Error(`Sprint not found: ${sprintId}`);
+      }
+
+      return getDependencyRisksOutputSchema.parse({
+        sprintId: sprint.id,
+        ...calculateDependencyCycleRisks(sprint),
+      });
+    },
+  };
 }
 
 export const getSprintOverviewInputSchema = z
