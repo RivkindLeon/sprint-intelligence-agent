@@ -7,7 +7,7 @@ development job reads this file to decide what to work on next.
 sessions — each run starts with no history of previous runs. If it claims work
 that was not done, the next session builds on a lie.
 
-Last verified against the code: 2026-09-23.
+Last verified against the code: 2026-09-24.
 
 ---
 
@@ -135,7 +135,13 @@ deterministic scope-change analytics with exact issue and activity evidence.
 Tests cover additions and removals, an unchanged sprint, input validation, a
 missing sprint, and repository data outside the requested sprint.
 
-Not yet implemented: the other three typed tools listed in section 8. No LLM
+The `getDependencyRisks` tool now validates a sprint ID, reads through an
+injected sprint repository, and returns the existing deterministic dependency
+cycle analytics with exact task and dependency-edge evidence. Tests cover a
+cycle, an acyclic graph, validation before repository access, and a missing
+sprint.
+
+Not yet implemented: the other two typed tools listed in section 8. No LLM
 orchestration or provider dependency has been added; that belongs to Milestone 4.
 
 ## Milestone 4 — Sprint Agent
@@ -159,17 +165,12 @@ agent run logging.
 
 ## Where the next session should start
 
-The repository skipped ahead: Milestone 2 is half-built while Milestone 0 and
-Milestone 1 are largely untouched. Analytics functions are pure and easy to add
-with no infrastructure, which is why they kept getting chosen — but the brief is
-explicit in section 21 that work should proceed milestone by milestone.
-
 Continue with the earliest incomplete milestone: **Milestone 3 — AI Tools**.
 Milestone 2 is complete, the strict `SprintAnalysis` schema exists, and
 `getSprintOverview`, `getIssue`, `getIssuesByStatus`,
-`getDeveloperWorkload`, `getVelocityHistory`, and `getSprintScopeChanges`
-establish the repository-backed typed tool pattern. Next, add
-`getDependencyRisks`; do not build a giant aggregate tool.
+`getDeveloperWorkload`, `getVelocityHistory`, `getSprintScopeChanges`, and
+`getDependencyRisks` establish the repository-backed typed tool pattern.
+Next, add `getStaleIssues`; do not build a giant aggregate tool.
 
 Do not start Milestone 3 (AI tools) before the demo dataset exists — there
 would be nothing for the tools to read.
