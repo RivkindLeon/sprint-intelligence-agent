@@ -10,6 +10,7 @@ import {
   createGetIssuesByStatusTool,
   createGetSprintOverviewTool,
   createGetSprintScopeChangesTool,
+  createGetStaleIssuesTool,
   createGetVelocityHistoryTool,
   sprintAnalysisSchema,
 } from "./index.js";
@@ -734,6 +735,98 @@ describe("getDependencyRisks tool", () => {
     await assert.rejects(
       tool.execute({ sprintId: "missing" }),
       /Sprint not found: missing/,
+    );
+  });
+});
+
+describe("getStaleIssues tool", () => {
+  const repository = {
+    async getSprintById(sprintId: string) {
+      return sprintId === sprint.id ? sprint : undefined;
+    },
+  };
+  const tool = createGetStaleIssuesTool(repository, {
+    clock: () => new Date("2026-09-10T12:00:00Z"),
+    thresholdDays: 5,
+  });
+
+  it("returns deterministic stale-work metrics with exact issue evidence", async () => {
+    assert.deepEqual(await tool.execute({ sprintId: sprint.id }), {
+      sprintId: "sprint-24",
+      staleIssues: [
+        {
+          issueId: "AUTH-3",
+          issueTitle: "Invitation audit",
+          status: "todo",
+          assigneeId: undefined,
+          storyPoints: undefined,
+          updatedAt: "2026-09-01T09:00:00Z",
+          staleDays: 9,
+        },
+        {
+          issueId: "AUTH-4",
+          issueTitle: "Invitation key rotation",
+          status: "blocked",
+          assigneeId: undefined,
+          storyPoints: 2,
+          updatedAt: "2026-09-02T09:00:00Z",
+          staleDays: 8,
+        },
+      ],
+      staleIssueCount: 2,
+      staleIssueIds: ["AUTH-3", "AUTH-4"],
+      staleStoryPoints: 2,
+      thresholdDays: 5,
+      referenceDate: "2026-09-10T12:00:00.000Z",
+    });
+  });
+
+  it("returns an empty summary when no unfinished issue reaches the threshold", async () => {
+    const freshTool = createGetStaleIssuesTool(repository, {
+      clock: () => new Date("2026-09-07T08:00:00Z"),
+      thresholdDays: 7,
+    });
+
+    assert.deepEqual(await freshTool.execute({ sprintId: sprint.id }), {
+      sprintId: "sprint-24",
+      staleIssues: [],
+      staleIssueCount: 0,
+      staleIssueIds: [],
+      staleStoryPoints: 0,
+      thresholdDays: 7,
+      referenceDate: "2026-09-07T08:00:00.000Z",
+    });
+  });
+
+  it("validates input before querying the repository", async () => {
+    let queryCount = 0;
+    const validatingTool = createGetStaleIssuesTool({
+      async getSprintById() {
+        queryCount += 1;
+        return sprint;
+      },
+    });
+
+    await assert.rejects(validatingTool.execute({ sprintId: "", extra: true }));
+    assert.equal(queryCount, 0);
+  });
+
+  it("reports a missing sprint explicitly", async () => {
+    await assert.rejects(
+      tool.execute({ sprintId: "missing" }),
+      /Sprint not found: missing/,
+    );
+  });
+
+  it("rejects invalid configured thresholds", async () => {
+    const invalidThresholdTool = createGetStaleIssuesTool(repository, {
+      clock: () => new Date("2026-09-10T12:00:00Z"),
+      thresholdDays: 0,
+    });
+
+    await assert.rejects(
+      invalidThresholdTool.execute({ sprintId: sprint.id }),
+      /thresholdDays must be a positive integer/,
     );
   });
 });

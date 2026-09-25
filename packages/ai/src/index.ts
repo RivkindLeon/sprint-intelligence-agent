@@ -5,6 +5,7 @@ import {
   calculateDeveloperWorkload,
   calculateScopeChange,
   calculateTeamVelocity,
+  findStaleIssues,
 } from "@sprint-intelligence/analytics";
 import type {
   Activity,
@@ -32,6 +33,74 @@ export interface VelocityHistoryRepository {
 
 export interface SprintScopeChangeRepository extends SprintRepository {
   getSprintActivities(sprintId: string): Promise<Activity[]>;
+}
+
+export interface GetStaleIssuesToolOptions {
+  clock?: () => Date;
+  thresholdDays?: number;
+}
+
+export const getStaleIssuesInputSchema = z
+  .object({
+    sprintId: z.string().trim().min(1),
+  })
+  .strict();
+
+const staleIssueSchema = z
+  .object({
+    issueId: z.string().min(1),
+    issueTitle: z.string().min(1),
+    status: z.enum(["todo", "in_progress", "blocked"]),
+    assigneeId: z.string().min(1).optional(),
+    storyPoints: z.number().nonnegative().optional(),
+    updatedAt: z.string().min(1),
+    staleDays: z.number().int().nonnegative(),
+  })
+  .strict();
+
+export const getStaleIssuesOutputSchema = z
+  .object({
+    sprintId: z.string().min(1),
+    staleIssues: z.array(staleIssueSchema),
+    staleIssueCount: z.number().int().nonnegative(),
+    staleIssueIds: z.array(z.string().min(1)),
+    staleStoryPoints: z.number().nonnegative(),
+    thresholdDays: z.number().int().positive(),
+    referenceDate: z.string().datetime(),
+  })
+  .strict();
+
+export type GetStaleIssuesInput = z.infer<typeof getStaleIssuesInputSchema>;
+export type GetStaleIssuesOutput = z.infer<typeof getStaleIssuesOutputSchema>;
+
+export function createGetStaleIssuesTool(
+  repository: SprintRepository,
+  options: GetStaleIssuesToolOptions = {},
+): SprintTool<GetStaleIssuesInput, GetStaleIssuesOutput> {
+  const clock = options.clock ?? (() => new Date());
+
+  return {
+    description:
+      "Return deterministic stale unfinished issues with exact issue, status, update-time, age, assignment, and estimate evidence.",
+    inputSchema: getStaleIssuesInputSchema,
+    outputSchema: getStaleIssuesOutputSchema,
+    async execute(input: unknown) {
+      const { sprintId } = getStaleIssuesInputSchema.parse(input);
+      const sprint = await repository.getSprintById(sprintId);
+
+      if (sprint === undefined) {
+        throw new Error(`Sprint not found: ${sprintId}`);
+      }
+
+      return getStaleIssuesOutputSchema.parse({
+        sprintId: sprint.id,
+        ...findStaleIssues(sprint, {
+          referenceDate: clock(),
+          thresholdDays: options.thresholdDays,
+        }),
+      });
+    },
+  };
 }
 
 export const getDependencyRisksInputSchema = z
