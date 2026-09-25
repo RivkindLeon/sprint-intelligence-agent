@@ -7,7 +7,7 @@ development job reads this file to decide what to work on next.
 sessions — each run starts with no history of previous runs. If it claims work
 that was not done, the next session builds on a lie.
 
-Last verified against the code: 2026-09-24.
+Last verified against the code: 2026-09-25.
 
 ---
 
@@ -141,7 +141,15 @@ cycle analytics with exact task and dependency-edge evidence. Tests cover a
 cycle, an acyclic graph, validation before repository access, and a missing
 sprint.
 
-Not yet implemented: the other two typed tools listed in section 8. No LLM
+The `getStaleIssues` tool now validates a sprint ID, reads through an injected
+sprint repository, and returns the existing deterministic stale-work analytics
+with exact issue, status, update-time, age, assignment, and estimate evidence.
+Its clock and threshold are application configuration rather than model input.
+Tests cover stale and fresh work, input validation, a missing sprint, and an
+invalid configured threshold.
+
+Not yet implemented: `getQualityProblems`, the final typed tool listed in
+section 8. No LLM
 orchestration or provider dependency has been added; that belongs to Milestone 4.
 
 ## Milestone 4 — Sprint Agent
@@ -169,8 +177,9 @@ Continue with the earliest incomplete milestone: **Milestone 3 — AI Tools**.
 Milestone 2 is complete, the strict `SprintAnalysis` schema exists, and
 `getSprintOverview`, `getIssue`, `getIssuesByStatus`,
 `getDeveloperWorkload`, `getVelocityHistory`, `getSprintScopeChanges`, and
-`getDependencyRisks` establish the repository-backed typed tool pattern.
-Next, add `getStaleIssues`; do not build a giant aggregate tool.
+`getDependencyRisks`, and `getStaleIssues` establish the repository-backed
+typed tool pattern. Next, add `getQualityProblems`; do not build a giant
+aggregate tool.
 
 Do not start Milestone 3 (AI tools) before the demo dataset exists — there
 would be nothing for the tools to read.
