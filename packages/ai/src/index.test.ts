@@ -8,6 +8,7 @@ import {
   createGetDeveloperWorkloadTool,
   createGetIssueTool,
   createGetIssuesByStatusTool,
+  createGetQualityProblemsTool,
   createGetSprintOverviewTool,
   createGetSprintScopeChangesTool,
   createGetStaleIssuesTool,
@@ -827,6 +828,91 @@ describe("getStaleIssues tool", () => {
     await assert.rejects(
       invalidThresholdTool.execute({ sprintId: sprint.id }),
       /thresholdDays must be a positive integer/,
+    );
+  });
+});
+
+describe("getQualityProblems tool", () => {
+  const repository = {
+    async getSprintById(sprintId: string) {
+      return sprintId === sprint.id ? sprint : undefined;
+    },
+  };
+  const tool = createGetQualityProblemsTool(repository);
+
+  it("returns deterministic quality problems with exact issue evidence", async () => {
+    assert.deepEqual(await tool.execute({ sprintId: sprint.id }), {
+      sprintId: "sprint-24",
+      missingEstimates: [
+        {
+          issueId: "AUTH-3",
+          issueTitle: "Invitation audit",
+          issueType: "task",
+          status: "todo",
+          assigneeId: undefined,
+        },
+      ],
+      missingEstimateCount: 1,
+      missingEstimateIssueIds: ["AUTH-3"],
+      missingAcceptanceCriteria: sprint.issues!.map((issue) => ({
+        issueId: issue.id,
+        issueTitle: issue.title,
+        issueType: issue.type,
+        status: issue.status,
+        assigneeId: issue.assigneeId,
+      })),
+      missingAcceptanceCriteriaCount: 4,
+      missingAcceptanceCriteriaIssueIds: [
+        "AUTH-1",
+        "AUTH-2",
+        "AUTH-3",
+        "AUTH-4",
+      ],
+    });
+  });
+
+  it("returns empty problem collections for a fully specified sprint", async () => {
+    const completeTool = createGetQualityProblemsTool({
+      async getSprintById() {
+        return {
+          ...sprint,
+          issues: sprint.issues!.map((issue) => ({
+            ...issue,
+            storyPoints: issue.storyPoints ?? 1,
+            acceptanceCriteria: "The expected behavior is verified.",
+          })),
+        };
+      },
+    });
+
+    assert.deepEqual(await completeTool.execute({ sprintId: sprint.id }), {
+      sprintId: "sprint-24",
+      missingEstimates: [],
+      missingEstimateCount: 0,
+      missingEstimateIssueIds: [],
+      missingAcceptanceCriteria: [],
+      missingAcceptanceCriteriaCount: 0,
+      missingAcceptanceCriteriaIssueIds: [],
+    });
+  });
+
+  it("validates input before querying the repository", async () => {
+    let queryCount = 0;
+    const validatingTool = createGetQualityProblemsTool({
+      async getSprintById() {
+        queryCount += 1;
+        return sprint;
+      },
+    });
+
+    await assert.rejects(validatingTool.execute({ sprintId: "", extra: true }));
+    assert.equal(queryCount, 0);
+  });
+
+  it("reports a missing sprint explicitly", async () => {
+    await assert.rejects(
+      tool.execute({ sprintId: "missing" }),
+      /Sprint not found: missing/,
     );
   });
 });
