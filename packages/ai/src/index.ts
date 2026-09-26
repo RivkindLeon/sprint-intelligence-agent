@@ -5,6 +5,8 @@ import {
   calculateDeveloperWorkload,
   calculateScopeChange,
   calculateTeamVelocity,
+  findMissingAcceptanceCriteria,
+  findMissingEstimates,
   findStaleIssues,
 } from "@sprint-intelligence/analytics";
 import type {
@@ -38,6 +40,75 @@ export interface SprintScopeChangeRepository extends SprintRepository {
 export interface GetStaleIssuesToolOptions {
   clock?: () => Date;
   thresholdDays?: number;
+}
+
+export const getQualityProblemsInputSchema = z
+  .object({
+    sprintId: z.string().trim().min(1),
+  })
+  .strict();
+
+const qualityProblemIssueSchema = z
+  .object({
+    issueId: z.string().min(1),
+    issueTitle: z.string().min(1),
+    issueType: z.enum(["story", "bug", "task"]),
+    status: z.enum(["todo", "in_progress", "blocked", "done"]),
+    assigneeId: z.string().min(1).optional(),
+  })
+  .strict();
+
+export const getQualityProblemsOutputSchema = z
+  .object({
+    sprintId: z.string().min(1),
+    missingEstimates: z.array(qualityProblemIssueSchema),
+    missingEstimateCount: z.number().int().nonnegative(),
+    missingEstimateIssueIds: z.array(z.string().min(1)),
+    missingAcceptanceCriteria: z.array(qualityProblemIssueSchema),
+    missingAcceptanceCriteriaCount: z.number().int().nonnegative(),
+    missingAcceptanceCriteriaIssueIds: z.array(z.string().min(1)),
+  })
+  .strict();
+
+export type GetQualityProblemsInput = z.infer<
+  typeof getQualityProblemsInputSchema
+>;
+export type GetQualityProblemsOutput = z.infer<
+  typeof getQualityProblemsOutputSchema
+>;
+
+export function createGetQualityProblemsTool(
+  repository: SprintRepository,
+): SprintTool<GetQualityProblemsInput, GetQualityProblemsOutput> {
+  return {
+    description:
+      "Return deterministic missing-estimate and missing-acceptance-criteria problems with exact issue evidence for one sprint.",
+    inputSchema: getQualityProblemsInputSchema,
+    outputSchema: getQualityProblemsOutputSchema,
+    async execute(input: unknown) {
+      const { sprintId } = getQualityProblemsInputSchema.parse(input);
+      const sprint = await repository.getSprintById(sprintId);
+
+      if (sprint === undefined) {
+        throw new Error(`Sprint not found: ${sprintId}`);
+      }
+
+      const missingEstimates = findMissingEstimates(sprint);
+      const missingAcceptanceCriteria = findMissingAcceptanceCriteria(sprint);
+
+      return getQualityProblemsOutputSchema.parse({
+        sprintId: sprint.id,
+        missingEstimates: missingEstimates.issues,
+        missingEstimateCount: missingEstimates.missingEstimateCount,
+        missingEstimateIssueIds: missingEstimates.missingEstimateIssueIds,
+        missingAcceptanceCriteria: missingAcceptanceCriteria.issues,
+        missingAcceptanceCriteriaCount:
+          missingAcceptanceCriteria.missingAcceptanceCriteriaCount,
+        missingAcceptanceCriteriaIssueIds:
+          missingAcceptanceCriteria.missingAcceptanceCriteriaIssueIds,
+      });
+    },
+  };
 }
 
 export const getStaleIssuesInputSchema = z

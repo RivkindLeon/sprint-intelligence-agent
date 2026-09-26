@@ -7,7 +7,7 @@ development job reads this file to decide what to work on next.
 sessions — each run starts with no history of previous runs. If it claims work
 that was not done, the next session builds on a lie.
 
-Last verified against the code: 2026-09-25.
+Last verified against the code: 2026-09-26.
 
 ---
 
@@ -96,7 +96,7 @@ tested and harmless, but they were added instead of the six missing ones.
 
 ## Milestone 3 — AI Tools
 
-**Status: in progress.** `packages/ai` now defines and tests the strict
+**Status: complete.** `packages/ai` now defines and tests the strict
 `SprintAnalysis` output schema. Health scores and confidence values have bounded
 ranges, unknown fields are rejected, and every risk must include at least one
 evidence item identifying an issue or metric.
@@ -148,8 +148,13 @@ Its clock and threshold are application configuration rather than model input.
 Tests cover stale and fresh work, input validation, a missing sprint, and an
 invalid configured threshold.
 
-Not yet implemented: `getQualityProblems`, the final typed tool listed in
-section 8. No LLM
+The `getQualityProblems` tool now validates a sprint ID, reads through an
+injected sprint repository, and returns the existing deterministic
+missing-estimate and missing-acceptance-criteria analytics with exact issue
+evidence. Tests cover populated and empty results, validation before repository
+access, and a missing sprint.
+
+All nine tools listed in section 8 are implemented and tested. No LLM
 orchestration or provider dependency has been added; that belongs to Milestone 4.
 
 ## Milestone 4 — Sprint Agent
@@ -173,16 +178,11 @@ agent run logging.
 
 ## Where the next session should start
 
-Continue with the earliest incomplete milestone: **Milestone 3 — AI Tools**.
-Milestone 2 is complete, the strict `SprintAnalysis` schema exists, and
-`getSprintOverview`, `getIssue`, `getIssuesByStatus`,
-`getDeveloperWorkload`, `getVelocityHistory`, `getSprintScopeChanges`, and
-`getDependencyRisks`, and `getStaleIssues` establish the repository-backed
-typed tool pattern. Next, add `getQualityProblems`; do not build a giant
-aggregate tool.
-
-Do not start Milestone 3 (AI tools) before the demo dataset exists — there
-would be nothing for the tools to read.
+Continue with the earliest incomplete milestone: **Milestone 4 — Sprint
+Agent**. Milestone 3 is complete: the strict `SprintAnalysis` schema and all
+nine repository-backed typed tools from section 8 are implemented and tested.
+Next, implement the smallest complete slice of the provider-agnostic,
+step-limited agent loop while keeping deterministic calculations in analytics.
 
 ## Correction for whoever edits the job prompt
 
