@@ -7,7 +7,7 @@ development job reads this file to decide what to work on next.
 sessions — each run starts with no history of previous runs. If it claims work
 that was not done, the next session builds on a lie.
 
-Last verified against the code: 2026-09-27.
+Last verified against the code: 2026-09-28.
 
 ---
 
@@ -166,9 +166,17 @@ output, feeds tool results back to the model, validates the final structured
 analysis, and replaces any model-provided health score with the deterministic
 score supplied by application code.
 
-Still unfinished: a Vercel AI SDK provider adapter, deterministic health-score
-calculation, verification that final evidence values came from this run's tool
-results, agent-run observability/persistence, and an end-to-end analysis test.
+The analytics package now calculates that deterministic integer 0-100 health score
+from seven bounded risk percentages: blocked work, capacity imbalance,
+dependency risk, scope growth, stale work, expected carry-over, and quality
+problems. The documented weighted formula returns an auditable per-factor
+penalty breakdown and is tested for representative values, clamping, and
+invalid inputs.
+
+Still unfinished: wiring the health-score inputs from repository analytics into
+the agent entry point, a Vercel AI SDK provider adapter, verification that final
+evidence values came from this run's tool results, agent-run
+observability/persistence, and an end-to-end analysis test.
 
 ## Milestone 5 — Dashboard
 
@@ -187,10 +195,10 @@ results, agent-run observability/persistence, and an end-to-end analysis test.
 ## Where the next session should start
 
 Continue with the earliest incomplete milestone: **Milestone 4 — Sprint
-Agent**. The provider-agnostic, step-limited tool loop is implemented and
-tested. Next, add deterministic health-score calculation before wiring a real
-model provider, so the LLM can explain the score but can never calculate or
-change it.
+Agent**. The deterministic health-score formula and provider-agnostic,
+step-limited tool loop are implemented and tested. Next, wire the score's seven
+inputs from repository analytics into the agent entry point so callers cannot
+supply or invent the score.
 
 ## Correction for whoever edits the job prompt
 

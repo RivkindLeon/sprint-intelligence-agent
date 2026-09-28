@@ -6,6 +6,79 @@ import type {
   Task,
 } from "@sprint-intelligence/domain";
 
+export interface SprintHealthFactors {
+  blockedWorkPercent: number;
+  capacityImbalancePercent: number;
+  dependencyRiskPercent: number;
+  scopeGrowthPercent: number;
+  staleWorkPercent: number;
+  forecastCarryOverPercent: number;
+  qualityProblemPercent: number;
+}
+
+export type SprintHealthFactor = keyof SprintHealthFactors;
+
+export interface SprintHealthPenalty {
+  factor: SprintHealthFactor;
+  valuePercent: number;
+  maxPenalty: number;
+  penalty: number;
+}
+
+export interface SprintHealthScore {
+  score: number;
+  penalties: SprintHealthPenalty[];
+  totalPenalty: number;
+}
+
+const HEALTH_FACTOR_WEIGHTS: Readonly<Record<SprintHealthFactor, number>> = {
+  blockedWorkPercent: 20,
+  capacityImbalancePercent: 15,
+  dependencyRiskPercent: 15,
+  scopeGrowthPercent: 10,
+  staleWorkPercent: 10,
+  forecastCarryOverPercent: 20,
+  qualityProblemPercent: 10,
+};
+
+/**
+ * Produces the sprint's deterministic integer 0-100 health score. Each input is the
+ * percentage of relevant work or developers affected by that risk. Negative
+ * percentages are treated as zero and values above 100 are capped. A factor's
+ * penalty is its capped percentage multiplied by its documented weight:
+ * blockers 20, capacity 15, dependencies 15, scope 10, stale work 10,
+ * expected carry-over 20, and quality problems 10 (100 points total).
+ */
+export function calculateSprintHealthScore(
+  factors: SprintHealthFactors,
+): SprintHealthScore {
+  const penalties = (
+    Object.entries(HEALTH_FACTOR_WEIGHTS) as Array<[SprintHealthFactor, number]>
+  ).map(([factor, maxPenalty]) => {
+    const rawValue = factors[factor];
+    if (!Number.isFinite(rawValue)) {
+      throw new TypeError(`${factor} must be a finite number`);
+    }
+
+    const valuePercent = Math.min(Math.max(rawValue, 0), 100);
+    return {
+      factor,
+      valuePercent,
+      maxPenalty,
+      penalty: roundToTwoDecimals((valuePercent / 100) * maxPenalty),
+    };
+  });
+  const totalPenalty = roundToTwoDecimals(
+    penalties.reduce((sum, factor) => sum + factor.penalty, 0),
+  );
+
+  return {
+    score: Math.round(Math.max(100 - totalPenalty, 0)),
+    penalties,
+    totalPenalty,
+  };
+}
+
 export interface SprintScopeChange {
   activityId: string;
   issueId: string;
