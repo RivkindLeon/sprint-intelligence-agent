@@ -16,12 +16,118 @@ import {
   calculateDeveloperWorkload,
   calculateReadyTaskSummary,
   calculateScopeChange,
+  calculateSprintHealthScore,
   calculateSprintProgress,
   calculateTeamVelocity,
   findMissingAcceptanceCriteria,
   findMissingEstimates,
   findStaleIssues,
 } from "./index.js";
+
+test("calculateSprintHealthScore applies the documented weighted penalties", () => {
+  assert.deepStrictEqual(
+    calculateSprintHealthScore({
+      blockedWorkPercent: 50,
+      capacityImbalancePercent: 20,
+      dependencyRiskPercent: 40,
+      scopeGrowthPercent: 25,
+      staleWorkPercent: 30,
+      forecastCarryOverPercent: 25,
+      qualityProblemPercent: 10,
+    }),
+    {
+      score: 70,
+      penalties: [
+        {
+          factor: "blockedWorkPercent",
+          valuePercent: 50,
+          maxPenalty: 20,
+          penalty: 10,
+        },
+        {
+          factor: "capacityImbalancePercent",
+          valuePercent: 20,
+          maxPenalty: 15,
+          penalty: 3,
+        },
+        {
+          factor: "dependencyRiskPercent",
+          valuePercent: 40,
+          maxPenalty: 15,
+          penalty: 6,
+        },
+        {
+          factor: "scopeGrowthPercent",
+          valuePercent: 25,
+          maxPenalty: 10,
+          penalty: 2.5,
+        },
+        {
+          factor: "staleWorkPercent",
+          valuePercent: 30,
+          maxPenalty: 10,
+          penalty: 3,
+        },
+        {
+          factor: "forecastCarryOverPercent",
+          valuePercent: 25,
+          maxPenalty: 20,
+          penalty: 5,
+        },
+        {
+          factor: "qualityProblemPercent",
+          valuePercent: 10,
+          maxPenalty: 10,
+          penalty: 1,
+        },
+      ],
+      totalPenalty: 30.5,
+    },
+  );
+});
+
+test("calculateSprintHealthScore clamps percentages and score boundaries", () => {
+  const healthy = calculateSprintHealthScore({
+    blockedWorkPercent: -10,
+    capacityImbalancePercent: 0,
+    dependencyRiskPercent: 0,
+    scopeGrowthPercent: 0,
+    staleWorkPercent: 0,
+    forecastCarryOverPercent: 0,
+    qualityProblemPercent: 0,
+  });
+  const unhealthy = calculateSprintHealthScore({
+    blockedWorkPercent: 200,
+    capacityImbalancePercent: 100,
+    dependencyRiskPercent: 100,
+    scopeGrowthPercent: 100,
+    staleWorkPercent: 100,
+    forecastCarryOverPercent: 100,
+    qualityProblemPercent: 100,
+  });
+
+  assert.strictEqual(healthy.score, 100);
+  assert.strictEqual(healthy.penalties[0]?.valuePercent, 0);
+  assert.strictEqual(unhealthy.score, 0);
+  assert.strictEqual(unhealthy.totalPenalty, 100);
+  assert.strictEqual(unhealthy.penalties[0]?.valuePercent, 100);
+});
+
+test("calculateSprintHealthScore rejects non-finite factor values", () => {
+  assert.throws(
+    () =>
+      calculateSprintHealthScore({
+        blockedWorkPercent: Number.NaN,
+        capacityImbalancePercent: 0,
+        dependencyRiskPercent: 0,
+        scopeGrowthPercent: 0,
+        staleWorkPercent: 0,
+        forecastCarryOverPercent: 0,
+        qualityProblemPercent: 0,
+      }),
+    /blockedWorkPercent must be a finite number/,
+  );
+});
 
 test("calculateCarryOverRisk forecasts excess commitment with issue evidence", () => {
   const sprint: Sprint = {
