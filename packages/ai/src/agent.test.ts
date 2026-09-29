@@ -21,6 +21,12 @@ const overviewTool = {
   },
 };
 
+const healthScoreSource = {
+  async calculate() {
+    return { score: 68, penalties: [], totalPenalty: 32 };
+  },
+};
+
 function createModel(steps: AgentModelStep[]) {
   const requests: AgentModelRequest[] = [];
   return {
@@ -62,11 +68,13 @@ describe("SprintAnalysisAgent", () => {
       },
       { type: "final", analysis: finalAnalysis },
     ]);
-    const agent = new SprintAnalysisAgent(model, {
-      getSprintOverview: overviewTool,
-    });
+    const agent = new SprintAnalysisAgent(
+      model,
+      { getSprintOverview: overviewTool },
+      healthScoreSource,
+    );
 
-    const result = await agent.analyze("sprint-24", 68);
+    const result = await agent.analyze("sprint-24");
 
     assert.equal(result.healthScore, 68);
     assert.equal(model.requests.length, 2);
@@ -92,7 +100,9 @@ describe("SprintAnalysisAgent", () => {
     ]);
 
     await assert.rejects(
-      new SprintAnalysisAgent(model, {}).analyze("sprint-24", 68),
+      new SprintAnalysisAgent(model, {}, healthScoreSource).analyze(
+        "sprint-24",
+      ),
     );
   });
 
@@ -102,7 +112,9 @@ describe("SprintAnalysisAgent", () => {
     ]);
 
     await assert.rejects(
-      new SprintAnalysisAgent(model, {}).analyze("sprint-24", 68),
+      new SprintAnalysisAgent(model, {}, healthScoreSource).analyze(
+        "sprint-24",
+      ),
       /Unknown agent tool: getEverything/,
     );
   });
@@ -123,11 +135,12 @@ describe("SprintAnalysisAgent", () => {
     const agent = new SprintAnalysisAgent(
       model,
       { getSprintOverview: overviewTool },
+      healthScoreSource,
       { maxSteps: 2 },
     );
 
     await assert.rejects(
-      agent.analyze("sprint-24", 68),
+      agent.analyze("sprint-24"),
       /exceeded the maximum of 2 model steps/,
     );
     assert.equal(model.requests.length, 2);

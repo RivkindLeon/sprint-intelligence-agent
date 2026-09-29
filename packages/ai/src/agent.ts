@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { sprintAnalysisSchema } from "./analysis.js";
 import type { SprintAnalysis } from "./analysis.js";
+import type { SprintHealthScoreSource } from "./health.js";
 
 export interface AgentTool {
   description: string;
@@ -52,6 +53,7 @@ export class SprintAnalysisAgent {
   constructor(
     private readonly model: SprintAnalysisModel,
     private readonly tools: AgentToolSet,
+    private readonly healthScoreSource: SprintHealthScoreSource,
     options: SprintAnalysisAgentOptions = {},
   ) {
     this.maxSteps = options.maxSteps ?? DEFAULT_MAX_STEPS;
@@ -60,17 +62,14 @@ export class SprintAnalysisAgent {
     }
   }
 
-  async analyze(
-    sprintId: string,
-    deterministicHealthScore: number,
-  ): Promise<SprintAnalysis> {
+  async analyze(sprintId: string): Promise<SprintAnalysis> {
     const parsedSprintId = z.string().trim().min(1).parse(sprintId);
     const parsedHealthScore = z
       .number()
       .int()
       .min(0)
       .max(100)
-      .parse(deterministicHealthScore);
+      .parse((await this.healthScoreSource.calculate(parsedSprintId)).score);
     const toolResults: AgentToolResult[] = [];
     const toolDescriptions = Object.fromEntries(
       Object.entries(this.tools).map(([name, tool]) => [
