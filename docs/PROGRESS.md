@@ -7,7 +7,7 @@ development job reads this file to decide what to work on next.
 sessions — each run starts with no history of previous runs. If it claims work
 that was not done, the next session builds on a lie.
 
-Last verified against the code: 2026-09-28.
+Last verified against the code: 2026-09-29.
 
 ---
 
@@ -173,8 +173,13 @@ problems. The documented weighted formula returns an auditable per-factor
 penalty breakdown and is tested for representative values, clamping, and
 invalid inputs.
 
-Still unfinished: wiring the health-score inputs from repository analytics into
-the agent entry point, a Vercel AI SDK provider adapter, verification that final
+The agent entry point now calculates that score through a repository-backed
+source instead of accepting a number from its caller. The source loads the
+sprint, activity, and history data and derives all seven inputs through existing
+deterministic analytics. Tests verify the complete input mapping and confirm the
+agent replaces the model's proposed score with the repository-derived value.
+
+Still unfinished: a Vercel AI SDK provider adapter, verification that final
 evidence values came from this run's tool results, agent-run
 observability/persistence, and an end-to-end analysis test.
 
@@ -195,10 +200,9 @@ observability/persistence, and an end-to-end analysis test.
 ## Where the next session should start
 
 Continue with the earliest incomplete milestone: **Milestone 4 — Sprint
-Agent**. The deterministic health-score formula and provider-agnostic,
-step-limited tool loop are implemented and tested. Next, wire the score's seven
-inputs from repository analytics into the agent entry point so callers cannot
-supply or invent the score.
+Agent**. The deterministic health score is now wired into the provider-agnostic,
+step-limited agent entry point. Next, implement the Vercel AI SDK provider
+adapter behind the existing `SprintAnalysisModel` interface.
 
 ## Correction for whoever edits the job prompt
 
