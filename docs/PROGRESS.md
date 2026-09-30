@@ -7,7 +7,7 @@ development job reads this file to decide what to work on next.
 sessions — each run starts with no history of previous runs. If it claims work
 that was not done, the next session builds on a lie.
 
-Last verified against the code: 2026-09-29.
+Last verified against the code: 2026-09-30.
 
 ---
 
@@ -179,9 +179,18 @@ sprint, activity, and history data and derives all seven inputs through existing
 deterministic analytics. Tests verify the complete input mapping and confirm the
 agent replaces the model's proposed score with the repository-derived value.
 
-Still unfinished: a Vercel AI SDK provider adapter, verification that final
-evidence values came from this run's tool results, agent-run
-observability/persistence, and an end-to-end analysis test.
+`VercelAiSdkSprintAnalysisModel` now adapts any Vercel AI SDK `LanguageModel`
+to the provider-agnostic agent interface. It exposes the registered Zod input
+schemas as AI SDK tools, requests the strict `SprintAnalysis` structured
+output, carries validated prior tool results into each call, and rejects
+multiple simultaneous tool calls so the outer agent remains the sole owner of
+tool execution and step limits. Tests cover tool-call mapping, structured final
+output, and the multiple-call guard.
+
+Still unfinished: verification that final evidence values came from this run's
+tool results, agent-run observability/persistence, and an end-to-end analysis
+test. A concrete provider/configuration factory is also still needed before the
+application can make live model calls.
 
 ## Milestone 5 — Dashboard
 
@@ -200,9 +209,9 @@ observability/persistence, and an end-to-end analysis test.
 ## Where the next session should start
 
 Continue with the earliest incomplete milestone: **Milestone 4 — Sprint
-Agent**. The deterministic health score is now wired into the provider-agnostic,
-step-limited agent entry point. Next, implement the Vercel AI SDK provider
-adapter behind the existing `SprintAnalysisModel` interface.
+Agent**. The Vercel AI SDK adapter is implemented behind the
+provider-agnostic, step-limited agent entry point. Next, verify that every final
+risk evidence value came from a validated tool result in the current run.
 
 ## Correction for whoever edits the job prompt
 

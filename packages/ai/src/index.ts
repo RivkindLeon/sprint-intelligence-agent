@@ -20,6 +20,7 @@ import type {
 export * from "./agent.js";
 export * from "./analysis.js";
 export * from "./health.js";
+export * from "./vercel-ai-sdk-model.js";
 
 export interface SprintRepository {
   getSprintById(sprintId: string): Promise<Sprint | undefined>;

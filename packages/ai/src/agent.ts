@@ -26,7 +26,7 @@ export interface AgentModelRequest {
   step: number;
   maxSteps: number;
   systemInstruction: string;
-  tools: Record<string, { description: string }>;
+  tools: Record<string, { description: string; inputSchema: z.ZodType }>;
   toolResults: AgentToolResult[];
 }
 
@@ -71,10 +71,10 @@ export class SprintAnalysisAgent {
       .max(100)
       .parse((await this.healthScoreSource.calculate(parsedSprintId)).score);
     const toolResults: AgentToolResult[] = [];
-    const toolDescriptions = Object.fromEntries(
+    const modelTools = Object.fromEntries(
       Object.entries(this.tools).map(([name, tool]) => [
         name,
-        { description: tool.description },
+        { description: tool.description, inputSchema: tool.inputSchema },
       ]),
     );
 
@@ -85,7 +85,7 @@ export class SprintAnalysisAgent {
         step,
         maxSteps: this.maxSteps,
         systemInstruction: SYSTEM_INSTRUCTION,
-        tools: toolDescriptions,
+        tools: modelTools,
         toolResults: [...toolResults],
       });
 
