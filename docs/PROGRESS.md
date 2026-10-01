@@ -7,7 +7,7 @@ development job reads this file to decide what to work on next.
 sessions — each run starts with no history of previous runs. If it claims work
 that was not done, the next session builds on a lie.
 
-Last verified against the code: 2026-09-30.
+Last verified against the code: 2026-10-01.
 
 ---
 
@@ -187,10 +187,14 @@ multiple simultaneous tool calls so the outer agent remains the sole owner of
 tool execution and step limits. Tests cover tool-call mapping, structured final
 output, and the multiple-call guard.
 
-Still unfinished: verification that final evidence values came from this run's
-tool results, agent-run observability/persistence, and an end-to-end analysis
-test. A concrete provider/configuration factory is also still needed before the
-application can make live model calls.
+Final analysis evidence is now checked against the validated tool outputs from
+the current agent run. Issue identifiers must occur in those outputs, and each
+metric name plus any claimed value must match an exact returned field. Tests
+verify supported evidence and reject invented issue IDs and altered metrics.
+
+Still unfinished: agent-run observability/persistence and an end-to-end
+analysis test. A concrete provider/configuration factory is also still needed
+before the application can make live model calls.
 
 ## Milestone 5 — Dashboard
 
@@ -209,9 +213,8 @@ application can make live model calls.
 ## Where the next session should start
 
 Continue with the earliest incomplete milestone: **Milestone 4 — Sprint
-Agent**. The Vercel AI SDK adapter is implemented behind the
-provider-agnostic, step-limited agent entry point. Next, verify that every final
-risk evidence value came from a validated tool result in the current run.
+Agent**. Evidence provenance is now enforced at finalization. Next, add agent
+run observability and persistence.
 
 ## Correction for whoever edits the job prompt
 
