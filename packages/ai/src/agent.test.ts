@@ -13,11 +13,15 @@ const overviewTool = {
   description: "Return deterministic sprint completion facts.",
   inputSchema: z.object({ sprintId: z.string() }).strict(),
   outputSchema: z
-    .object({ sprintId: z.string(), completedStoryPoints: z.number() })
+    .object({
+      sprintId: z.string(),
+      completedStoryPoints: z.number(),
+      issueIds: z.array(z.string()),
+    })
     .strict(),
   async execute(input: unknown) {
     const { sprintId } = this.inputSchema.parse(input);
-    return { sprintId, completedStoryPoints: 13 };
+    return { sprintId, completedStoryPoints: 13, issueIds: ["AUTH-2"] };
   },
 };
 
@@ -83,7 +87,11 @@ describe("SprintAnalysisAgent", () => {
         step: 1,
         toolName: "getSprintOverview",
         input: { sprintId: "sprint-24" },
-        output: { sprintId: "sprint-24", completedStoryPoints: 13 },
+        output: {
+          sprintId: "sprint-24",
+          completedStoryPoints: 13,
+          issueIds: ["AUTH-2"],
+        },
       },
     ]);
   });
@@ -103,6 +111,68 @@ describe("SprintAnalysisAgent", () => {
       new SprintAnalysisAgent(model, {}, healthScoreSource).analyze(
         "sprint-24",
       ),
+    );
+  });
+
+  it("rejects issue evidence that was not returned by a tool in this run", async () => {
+    const model = createModel([
+      {
+        type: "tool_call",
+        toolName: "getSprintOverview",
+        input: { sprintId: "sprint-24" },
+      },
+      {
+        type: "final",
+        analysis: {
+          ...finalAnalysis,
+          risks: [
+            {
+              ...finalAnalysis.risks[0],
+              evidence: [{ issueId: "AUTH-999" }],
+            },
+          ],
+        },
+      },
+    ]);
+
+    await assert.rejects(
+      new SprintAnalysisAgent(
+        model,
+        { getSprintOverview: overviewTool },
+        healthScoreSource,
+      ).analyze("sprint-24"),
+      /Unsupported evidence.*AUTH-999/,
+    );
+  });
+
+  it("rejects metric values that differ from validated tool output", async () => {
+    const model = createModel([
+      {
+        type: "tool_call",
+        toolName: "getSprintOverview",
+        input: { sprintId: "sprint-24" },
+      },
+      {
+        type: "final",
+        analysis: {
+          ...finalAnalysis,
+          risks: [
+            {
+              ...finalAnalysis.risks[0],
+              evidence: [{ metric: "completedStoryPoints", value: 21 }],
+            },
+          ],
+        },
+      },
+    ]);
+
+    await assert.rejects(
+      new SprintAnalysisAgent(
+        model,
+        { getSprintOverview: overviewTool },
+        healthScoreSource,
+      ).analyze("sprint-24"),
+      /Unsupported evidence.*completedStoryPoints/,
     );
   });
 
