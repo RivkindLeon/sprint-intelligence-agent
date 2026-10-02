@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 
+import { AgentRunRepository } from "./agent-run-repository.js";
 import { createDatabaseConnection } from "./client.js";
 import { loadDemoDataset, seedDemoDataset } from "./seed.js";
 
@@ -28,6 +29,8 @@ describe("database connection", { skip: !runDatabaseIntegrationTest }, () => {
         tables.map(({ table_name }) => table_name),
         [
           "activities",
+          "agent_runs",
+          "agent_tool_calls",
           "developers",
           "issue_dependencies",
           "issues",
@@ -77,6 +80,79 @@ describe("database connection", { skip: !runDatabaseIntegrationTest }, () => {
           .length,
         history: 5,
       });
+    } finally {
+      await client.end();
+    }
+  });
+
+  it("persists completed and failed agent runs with ordered tool traces", async () => {
+    const { client, db } = createDatabaseConnection();
+
+    try {
+      await migrate(db, { migrationsFolder: "drizzle" });
+      await seedDemoDataset(db, await loadDemoDataset());
+      const repository = new AgentRunRepository(db);
+      const completedRunId = await repository.start({
+        sprintId: "sprint-24",
+        model: "test-model",
+        startedAt: "2026-10-02T16:30:00.000Z",
+      });
+
+      await repository.recordToolCall(completedRunId, {
+        step: 2,
+        toolName: "getDependencyRisks",
+        durationMs: 19,
+        status: "completed",
+        input: { sprintId: "sprint-24" },
+        resultMetadata: { cycleCount: 1 },
+      });
+      await repository.recordToolCall(completedRunId, {
+        step: 1,
+        toolName: "getSprintOverview",
+        durationMs: 7,
+        status: "completed",
+        input: { sprintId: "sprint-24" },
+        resultMetadata: { issueCount: 35 },
+      });
+      await repository.complete(completedRunId, {
+        endedAt: "2026-10-02T16:30:01.000Z",
+        tokenUsage: { inputTokens: 120, outputTokens: 45 },
+        finalResult: { healthScore: 68, risks: [] },
+      });
+
+      const completedRun = await repository.getById(completedRunId);
+      assert.equal(completedRun?.status, "completed");
+      assert.equal(completedRun?.model, "test-model");
+      assert.deepEqual(completedRun?.tokenUsage, {
+        inputTokens: 120,
+        outputTokens: 45,
+      });
+      assert.deepEqual(
+        completedRun?.toolCalls.map(({ step, toolName }) => ({
+          step,
+          toolName,
+        })),
+        [
+          { step: 1, toolName: "getSprintOverview" },
+          { step: 2, toolName: "getDependencyRisks" },
+        ],
+      );
+
+      const failedRunId = await repository.start({
+        sprintId: "sprint-24",
+        model: "test-model",
+        startedAt: "2026-10-02T16:31:00.000Z",
+      });
+      await repository.fail(failedRunId, {
+        endedAt: "2026-10-02T16:31:01.000Z",
+        error: "provider unavailable",
+      });
+
+      const failedRun = await repository.getById(failedRunId);
+      assert.equal(failedRun?.status, "failed");
+      assert.equal(failedRun?.error, "provider unavailable");
+      assert.equal(failedRun?.finalResult, null);
+      assert.equal(await repository.getById("missing-run"), undefined);
     } finally {
       await client.end();
     }
