@@ -4,6 +4,7 @@ import {
   check,
   date,
   integer,
+  jsonb,
   pgEnum,
   pgTable,
   primaryKey,
@@ -25,6 +26,15 @@ export const activityType = pgEnum("activity_type", [
   "estimate_changed",
   "added_to_sprint",
   "removed_from_sprint",
+]);
+export const agentRunStatus = pgEnum("agent_run_status", [
+  "running",
+  "completed",
+  "failed",
+]);
+export const agentToolCallStatus = pgEnum("agent_tool_call_status", [
+  "completed",
+  "failed",
 ]);
 
 export const sprints = pgTable(
@@ -173,6 +183,56 @@ export const sprintHistory = pgTable(
     check(
       "sprint_history_nonnegative_points",
       sql`${table.committedStoryPoints} >= 0 and ${table.completedStoryPoints} >= 0`,
+    ),
+  ],
+);
+
+export const agentRuns = pgTable(
+  "agent_runs",
+  {
+    id: text("id").primaryKey(),
+    sprintId: text("sprint_id")
+      .notNull()
+      .references(() => sprints.id, { onDelete: "cascade" }),
+    model: text("model").notNull(),
+    status: agentRunStatus("status").notNull().default("running"),
+    startedAt: timestamp("started_at", {
+      withTimezone: true,
+      mode: "string",
+    }).notNull(),
+    endedAt: timestamp("ended_at", { withTimezone: true, mode: "string" }),
+    tokenUsage: jsonb("token_usage"),
+    finalResult: jsonb("final_result"),
+    error: text("error"),
+  },
+  (table) => [
+    check(
+      "agent_runs_valid_time_range",
+      sql`${table.endedAt} is null or ${table.endedAt} >= ${table.startedAt}`,
+    ),
+  ],
+);
+
+export const agentToolCalls = pgTable(
+  "agent_tool_calls",
+  {
+    id: text("id").primaryKey(),
+    runId: text("run_id")
+      .notNull()
+      .references(() => agentRuns.id, { onDelete: "cascade" }),
+    step: integer("step").notNull(),
+    toolName: text("tool_name").notNull(),
+    durationMs: integer("duration_ms").notNull(),
+    status: agentToolCallStatus("status").notNull(),
+    input: jsonb("input").notNull(),
+    resultMetadata: jsonb("result_metadata"),
+    error: text("error"),
+  },
+  (table) => [
+    check("agent_tool_calls_positive_step", sql`${table.step} > 0`),
+    check(
+      "agent_tool_calls_nonnegative_duration",
+      sql`${table.durationMs} >= 0`,
     ),
   ],
 );

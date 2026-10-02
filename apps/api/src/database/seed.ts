@@ -13,6 +13,7 @@ import {
   sprintHistory,
   sprints,
 } from "./schema.js";
+import type * as schema from "./schema.js";
 
 type DemoSprint = typeof sprints.$inferInsert & { developerIds: string[] };
 type DemoDeveloper = typeof developers.$inferInsert;
@@ -46,7 +47,7 @@ export async function loadDemoDataset(): Promise<DemoDataset> {
 }
 
 export async function seedDemoDataset(
-  db: PostgresJsDatabase,
+  db: PostgresJsDatabase<typeof schema>,
   dataset: DemoDataset,
 ): Promise<void> {
   const { developerIds, ...sprint } = dataset.sprint;

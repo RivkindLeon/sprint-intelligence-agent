@@ -7,7 +7,7 @@ development job reads this file to decide what to work on next.
 sessions — each run starts with no history of previous runs. If it claims work
 that was not done, the next session builds on a lie.
 
-Last verified against the code: 2026-10-01.
+Last verified against the code: 2026-10-02.
 
 ---
 
@@ -192,9 +192,19 @@ the current agent run. Issue identifiers must occur in those outputs, and each
 metric name plus any claimed value must match an exact returned field. Tests
 verify supported evidence and reject invented issue IDs and altered metrics.
 
-Still unfinished: agent-run observability/persistence and an end-to-end
-analysis test. A concrete provider/configuration factory is also still needed
-before the application can make live model calls.
+The PostgreSQL persistence foundation for agent observability now exists.
+`agent_runs` stores sprint/model identity, lifecycle timestamps and status,
+optional token usage, the final structured result, and errors;
+`agent_tool_calls` stores ordered steps, tool names, duration, status, validated
+input, compact result metadata, and errors. The repository supports starting,
+completing, failing, retrieving, and appending tool traces. A generated
+migration and PostgreSQL integration test cover completed and failed runs plus
+ordered trace retrieval.
+
+Still unfinished: wire the agent loop to this repository so real executions
+record timings/results/errors, then add an end-to-end analysis test. A concrete
+provider/configuration factory is also still needed before the application can
+make live model calls.
 
 ## Milestone 5 — Dashboard
 
@@ -213,8 +223,9 @@ before the application can make live model calls.
 ## Where the next session should start
 
 Continue with the earliest incomplete milestone: **Milestone 4 — Sprint
-Agent**. Evidence provenance is now enforced at finalization. Next, add agent
-run observability and persistence.
+Agent**. The observability schema and repository are present; next, instrument
+the agent loop to persist run lifecycle and tool-call events through that
+boundary.
 
 ## Correction for whoever edits the job prompt
 

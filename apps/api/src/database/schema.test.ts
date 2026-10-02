@@ -5,6 +5,8 @@ import { getTableName } from "drizzle-orm";
 
 import {
   activities,
+  agentRuns,
+  agentToolCalls,
   developers,
   issueDependencies,
   issues,
@@ -23,6 +25,8 @@ test("defines the Milestone 1 domain tables", () => {
       issueDependencies,
       activities,
       sprintHistory,
+      agentRuns,
+      agentToolCalls,
     ].map(getTableName),
     [
       "sprints",
@@ -32,8 +36,19 @@ test("defines the Milestone 1 domain tables", () => {
       "issue_dependencies",
       "activities",
       "sprint_history",
+      "agent_runs",
+      "agent_tool_calls",
     ],
   );
+});
+
+test("defines normalized agent observability tables", () => {
+  assert.equal(agentRuns.sprintId.notNull, true);
+  assert.equal(agentRuns.model.notNull, true);
+  assert.equal(agentRuns.startedAt.notNull, true);
+  assert.equal(agentToolCalls.runId.notNull, true);
+  assert.equal(agentToolCalls.toolName.notNull, true);
+  assert.equal(agentToolCalls.durationMs.notNull, true);
 });
 
 test("keeps dependencies normalized for traceable evidence", () => {
