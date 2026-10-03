@@ -5,8 +5,10 @@ import { z } from "zod";
 
 import {
   SprintAnalysisAgent,
+  type AgentRunPersistence,
   type AgentModelRequest,
   type AgentModelStep,
+  type JsonValue,
 } from "./agent.js";
 
 const overviewTool = {
@@ -42,6 +44,30 @@ function createModel(steps: AgentModelStep[]) {
       return step;
     },
   };
+}
+
+function createRunRepository() {
+  const events: Array<{ type: string; runId?: string; input: unknown }> = [];
+  const repository: AgentRunPersistence = {
+    async start(input) {
+      events.push({ type: "start", input });
+      return "run-1";
+    },
+    async recordToolCall(runId, input) {
+      events.push({ type: "tool", runId, input });
+    },
+    async complete(runId, input) {
+      events.push({ type: "complete", runId, input });
+    },
+    async fail(runId, input) {
+      events.push({ type: "fail", runId, input });
+    },
+  };
+  return { events, repository };
+}
+
+function sequenceClock(...timestamps: string[]) {
+  return () => new Date(timestamps.shift() ?? "2026-10-03T16:30:10.000Z");
 }
 
 const finalAnalysis = {
@@ -214,5 +240,128 @@ describe("SprintAnalysisAgent", () => {
       /exceeded the maximum of 2 model steps/,
     );
     assert.equal(model.requests.length, 2);
+  });
+
+  it("persists the run lifecycle and compact successful tool metadata", async () => {
+    const model = createModel([
+      {
+        type: "tool_call",
+        toolName: "getSprintOverview",
+        input: { sprintId: "sprint-24" },
+      },
+      { type: "final", analysis: finalAnalysis },
+    ]);
+    const { events, repository } = createRunRepository();
+    const agent = new SprintAnalysisAgent(
+      model,
+      { getSprintOverview: overviewTool },
+      healthScoreSource,
+      {
+        observability: {
+          model: "test-model",
+          repository,
+          now: sequenceClock(
+            "2026-10-03T16:30:00.000Z",
+            "2026-10-03T16:30:01.000Z",
+            "2026-10-03T16:30:01.025Z",
+            "2026-10-03T16:30:02.000Z",
+          ),
+        },
+      },
+    );
+
+    await agent.analyze("sprint-24");
+
+    assert.deepEqual(events[0], {
+      type: "start",
+      input: {
+        sprintId: "sprint-24",
+        model: "test-model",
+        startedAt: "2026-10-03T16:30:00.000Z",
+      },
+    });
+    assert.deepEqual(events[1], {
+      type: "tool",
+      runId: "run-1",
+      input: {
+        step: 1,
+        toolName: "getSprintOverview",
+        durationMs: 25,
+        status: "completed",
+        input: { sprintId: "sprint-24" },
+        resultMetadata: {
+          type: "object",
+          fields: ["completedStoryPoints", "issueIds", "sprintId"],
+        },
+      },
+    });
+    assert.equal(events[2]!.type, "complete");
+    assert.equal(
+      (events[2]!.input as { endedAt: string }).endedAt,
+      "2026-10-03T16:30:02.000Z",
+    );
+    assert.deepEqual(
+      (events[2]!.input as { finalResult: JsonValue }).finalResult,
+      { ...finalAnalysis, healthScore: 68 },
+    );
+  });
+
+  it("persists failed tool calls and marks the run failed", async () => {
+    const failure = new Error("repository unavailable");
+    const failingTool = {
+      ...overviewTool,
+      async execute() {
+        throw failure;
+      },
+    };
+    const model = createModel([
+      {
+        type: "tool_call",
+        toolName: "getSprintOverview",
+        input: { sprintId: "sprint-24" },
+      },
+    ]);
+    const { events, repository } = createRunRepository();
+    const agent = new SprintAnalysisAgent(
+      model,
+      { getSprintOverview: failingTool },
+      healthScoreSource,
+      {
+        observability: {
+          model: "test-model",
+          repository,
+          now: sequenceClock(
+            "2026-10-03T16:30:00.000Z",
+            "2026-10-03T16:30:01.000Z",
+            "2026-10-03T16:30:01.040Z",
+            "2026-10-03T16:30:02.000Z",
+          ),
+        },
+      },
+    );
+
+    await assert.rejects(agent.analyze("sprint-24"), failure);
+    assert.deepEqual(events.slice(1), [
+      {
+        type: "tool",
+        runId: "run-1",
+        input: {
+          step: 1,
+          toolName: "getSprintOverview",
+          durationMs: 40,
+          status: "failed",
+          input: { sprintId: "sprint-24" },
+          error: "repository unavailable",
+        },
+      },
+      {
+        type: "fail",
+        runId: "run-1",
+        input: {
+          endedAt: "2026-10-03T16:30:02.000Z",
+          error: "repository unavailable",
+        },
+      },
+    ]);
   });
 });

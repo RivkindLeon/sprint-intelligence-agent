@@ -15,6 +15,7 @@
     "lint": "eslint src drizzle.config.ts --max-warnings 0"
   },
   "dependencies": {
+    "@sprint-intelligence/ai": "workspace:*",
     "@sprint-intelligence/shared": "workspace:*",
     "drizzle-orm": "^0.45.2",
     "fastify": "^5.6.0",

@@ -7,7 +7,7 @@ development job reads this file to decide what to work on next.
 sessions — each run starts with no history of previous runs. If it claims work
 that was not done, the next session builds on a lie.
 
-Last verified against the code: 2026-10-02.
+Last verified against the code: 2026-10-03.
 
 ---
 
@@ -201,10 +201,15 @@ completing, failing, retrieving, and appending tool traces. A generated
 migration and PostgreSQL integration test cover completed and failed runs plus
 ordered trace retrieval.
 
-Still unfinished: wire the agent loop to this repository so real executions
-record timings/results/errors, then add an end-to-end analysis test. A concrete
-provider/configuration factory is also still needed before the application can
-make live model calls.
+The agent loop now uses an injected persistence boundary implemented by the
+PostgreSQL repository. Each analysis records its model and lifecycle, each tool
+call records its validated input, duration, status, compact result shape or
+error, and successful runs store the final validated analysis. Tests cover both
+successful and failed tool executions and run lifecycle transitions.
+
+Still unfinished: add an end-to-end analysis test. A concrete provider and
+environment-configuration factory is also still needed before the application
+can make live model calls.
 
 ## Milestone 5 — Dashboard
 
@@ -223,9 +228,9 @@ make live model calls.
 ## Where the next session should start
 
 Continue with the earliest incomplete milestone: **Milestone 4 — Sprint
-Agent**. The observability schema and repository are present; next, instrument
-the agent loop to persist run lifecycle and tool-call events through that
-boundary.
+Agent**. Add the end-to-end analysis test over the synthetic sprint and a fake
+model, verifying structured output, deterministic health, evidence, tool
+execution, and persisted observability without calling a real LLM.
 
 ## Correction for whoever edits the job prompt
 
