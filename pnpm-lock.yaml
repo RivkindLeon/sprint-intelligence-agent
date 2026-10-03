@@ -29,6 +29,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@sprint-intelligence/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
       '@sprint-intelligence/shared':
         specifier: workspace:*
         version: link:../../packages/shared

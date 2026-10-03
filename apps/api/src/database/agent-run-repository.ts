@@ -1,13 +1,11 @@
 import { randomUUID } from "node:crypto";
 
+import type { AgentRunPersistence, JsonValue } from "@sprint-intelligence/ai";
 import { asc, eq } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 
 import { agentRuns, agentToolCalls } from "./schema.js";
 import type * as schema from "./schema.js";
-
-type JsonValue =
-  null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
 
 export interface StartAgentRunInput {
   sprintId: string;
@@ -37,7 +35,7 @@ export interface FailAgentRunInput {
   error: string;
 }
 
-export class AgentRunRepository {
+export class AgentRunRepository implements AgentRunPersistence {
   constructor(private readonly db: PostgresJsDatabase<typeof schema>) {}
 
   async start(input: StartAgentRunInput): Promise<string> {

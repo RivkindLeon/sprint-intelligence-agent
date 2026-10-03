@@ -40,6 +40,39 @@ export interface SprintAnalysisModel {
 
 export interface SprintAnalysisAgentOptions {
   maxSteps?: number;
+  observability?: {
+    model: string;
+    repository: AgentRunPersistence;
+    now?: () => Date;
+  };
+}
+
+export type JsonValue =
+  null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
+
+export interface AgentRunPersistence {
+  start(input: {
+    sprintId: string;
+    model: string;
+    startedAt: string;
+  }): Promise<string>;
+  recordToolCall(
+    runId: string,
+    input: {
+      step: number;
+      toolName: string;
+      durationMs: number;
+      status: "completed" | "failed";
+      input: JsonValue;
+      resultMetadata?: JsonValue;
+      error?: string;
+    },
+  ): Promise<void>;
+  complete(
+    runId: string,
+    input: { endedAt: string; finalResult: JsonValue },
+  ): Promise<void>;
+  fail(runId: string, input: { endedAt: string; error: string }): Promise<void>;
 }
 
 const DEFAULT_MAX_STEPS = 8;
@@ -114,6 +147,7 @@ function assertEvidenceProvenance(
 
 export class SprintAnalysisAgent {
   private readonly maxSteps: number;
+  private readonly observability: SprintAnalysisAgentOptions["observability"];
 
   constructor(
     private readonly model: SprintAnalysisModel,
@@ -122,6 +156,7 @@ export class SprintAnalysisAgent {
     options: SprintAnalysisAgentOptions = {},
   ) {
     this.maxSteps = options.maxSteps ?? DEFAULT_MAX_STEPS;
+    this.observability = options.observability;
     if (!Number.isInteger(this.maxSteps) || this.maxSteps < 1) {
       throw new Error("maxSteps must be a positive integer");
     }
@@ -129,6 +164,38 @@ export class SprintAnalysisAgent {
 
   async analyze(sprintId: string): Promise<SprintAnalysis> {
     const parsedSprintId = z.string().trim().min(1).parse(sprintId);
+    const now = this.observability?.now ?? (() => new Date());
+    const runId = await this.observability?.repository.start({
+      sprintId: parsedSprintId,
+      model: this.observability.model,
+      startedAt: now().toISOString(),
+    });
+
+    try {
+      const result = await this.runAnalysis(parsedSprintId, runId, now);
+      if (runId !== undefined) {
+        await this.observability!.repository.complete(runId, {
+          endedAt: now().toISOString(),
+          finalResult: toJsonValue(result),
+        });
+      }
+      return result;
+    } catch (error) {
+      if (runId !== undefined) {
+        await this.observability!.repository.fail(runId, {
+          endedAt: now().toISOString(),
+          error: errorMessage(error),
+        });
+      }
+      throw error;
+    }
+  }
+
+  private async runAnalysis(
+    parsedSprintId: string,
+    runId: string | undefined,
+    now: () => Date,
+  ): Promise<SprintAnalysis> {
     const parsedHealthScore = z
       .number()
       .int()
@@ -171,8 +238,35 @@ export class SprintAnalysisAgent {
         throw new Error(`Unknown agent tool: ${modelStep.toolName}`);
       }
 
-      const input = tool.inputSchema.parse(modelStep.input);
-      const output = tool.outputSchema.parse(await tool.execute(input));
+      const startedAt = now().getTime();
+      let input: unknown = modelStep.input;
+      let output: unknown;
+      try {
+        input = tool.inputSchema.parse(modelStep.input);
+        output = tool.outputSchema.parse(await tool.execute(input));
+      } catch (error) {
+        if (runId !== undefined) {
+          await this.observability!.repository.recordToolCall(runId, {
+            step,
+            toolName: modelStep.toolName,
+            durationMs: Math.max(0, now().getTime() - startedAt),
+            status: "failed",
+            input: toJsonValue(input),
+            error: errorMessage(error),
+          });
+        }
+        throw error;
+      }
+      if (runId !== undefined) {
+        await this.observability!.repository.recordToolCall(runId, {
+          step,
+          toolName: modelStep.toolName,
+          durationMs: Math.max(0, now().getTime() - startedAt),
+          status: "completed",
+          input: toJsonValue(input),
+          resultMetadata: summarizeResult(output),
+        });
+      }
       toolResults.push({
         step,
         toolName: modelStep.toolName,
@@ -185,4 +279,27 @@ export class SprintAnalysisAgent {
       `Sprint analysis exceeded the maximum of ${this.maxSteps} model steps`,
     );
   }
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function toJsonValue(value: unknown): JsonValue {
+  try {
+    const serialized = JSON.stringify(value);
+    return serialized === undefined
+      ? null
+      : (JSON.parse(serialized) as JsonValue);
+  } catch {
+    return String(value);
+  }
+}
+
+function summarizeResult(value: unknown): JsonValue {
+  if (Array.isArray(value)) return { type: "array", itemCount: value.length };
+  if (value !== null && typeof value === "object") {
+    return { type: "object", fields: Object.keys(value).sort() };
+  }
+  return { type: typeof value };
 }
