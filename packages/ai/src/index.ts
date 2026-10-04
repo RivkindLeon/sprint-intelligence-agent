@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import {
+  calculateBlockedTaskRisks,
   calculateDependencyCycleRisks,
   calculateDeveloperWorkload,
   calculateScopeChange,
@@ -45,6 +46,83 @@ export interface SprintScopeChangeRepository extends SprintRepository {
 export interface GetStaleIssuesToolOptions {
   clock?: () => Date;
   thresholdDays?: number;
+}
+
+export const getBlockedIssuesInputSchema = z
+  .object({
+    sprintId: z.string().trim().min(1),
+  })
+  .strict();
+
+const blockingIssueSchema = z
+  .object({
+    issueId: z.string().min(1),
+    status: z.enum(["todo", "in_progress", "done", "missing"]),
+  })
+  .strict();
+
+const blockedIssueSchema = z
+  .object({
+    issueId: z.string().min(1),
+    issueTitle: z.string().min(1),
+    assigneeId: z.string().min(1).optional(),
+    blockedBy: z.array(blockingIssueSchema).min(1),
+    estimateHours: z.number().nonnegative(),
+    reason: z.string().min(1),
+  })
+  .strict();
+
+export const getBlockedIssuesOutputSchema = z
+  .object({
+    sprintId: z.string().min(1),
+    blockedIssues: z.array(blockedIssueSchema),
+    blockedIssueCount: z.number().int().nonnegative(),
+    blockedHours: z.number().nonnegative(),
+    blockedIssueIds: z.array(z.string().min(1)),
+  })
+  .strict();
+
+export type GetBlockedIssuesInput = z.infer<typeof getBlockedIssuesInputSchema>;
+export type GetBlockedIssuesOutput = z.infer<
+  typeof getBlockedIssuesOutputSchema
+>;
+
+export function createGetBlockedIssuesTool(
+  repository: SprintRepository,
+): SprintTool<GetBlockedIssuesInput, GetBlockedIssuesOutput> {
+  return {
+    description:
+      "Return deterministic blocked work with exact issue and unfinished dependency evidence for one sprint.",
+    inputSchema: getBlockedIssuesInputSchema,
+    outputSchema: getBlockedIssuesOutputSchema,
+    async execute(input: unknown) {
+      const { sprintId } = getBlockedIssuesInputSchema.parse(input);
+      const sprint = await repository.getSprintById(sprintId);
+
+      if (sprint === undefined) {
+        throw new Error(`Sprint not found: ${sprintId}`);
+      }
+
+      const result = calculateBlockedTaskRisks(sprint);
+      return getBlockedIssuesOutputSchema.parse({
+        sprintId: sprint.id,
+        blockedIssues: result.risks.map((risk) => ({
+          issueId: risk.taskId,
+          issueTitle: risk.taskTitle,
+          assigneeId: risk.assigneeId,
+          blockedBy: risk.blockedBy.map((dependency) => ({
+            issueId: dependency.dependencyId,
+            status: dependency.dependencyStatus,
+          })),
+          estimateHours: risk.blockedHours,
+          reason: risk.reason,
+        })),
+        blockedIssueCount: result.blockedTaskCount,
+        blockedHours: result.blockedHours,
+        blockedIssueIds: result.blockedTaskIds,
+      });
+    },
+  };
 }
 
 export const getQualityProblemsInputSchema = z
