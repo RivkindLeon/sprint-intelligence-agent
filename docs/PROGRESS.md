@@ -7,7 +7,7 @@ development job reads this file to decide what to work on next.
 sessions — each run starts with no history of previous runs. If it claims work
 that was not done, the next session builds on a lie.
 
-Last verified against the code: 2026-10-03.
+Last verified against the code: 2026-10-04.
 
 ---
 
@@ -135,6 +135,13 @@ deterministic scope-change analytics with exact issue and activity evidence.
 Tests cover additions and removals, an unchanged sprint, input validation, a
 missing sprint, and repository data outside the requested sprint.
 
+The `getBlockedIssues` tool now validates a sprint ID, runs the existing
+deterministic blocked-work analytics, and returns exact blocked issue,
+unfinished or missing dependency, assignment, and estimate evidence. Tests
+cover unfinished and missing dependencies, an unblocked sprint, input
+validation, and a missing sprint. This tool was previously and incorrectly
+listed as complete even though it was absent from the code.
+
 The `getDependencyRisks` tool now validates a sprint ID, reads through an
 injected sprint repository, and returns the existing deterministic dependency
 cycle analytics with exact task and dependency-edge evidence. Tests cover a
@@ -154,7 +161,7 @@ missing-estimate and missing-acceptance-criteria analytics with exact issue
 evidence. Tests cover populated and empty results, validation before repository
 access, and a missing sprint.
 
-All nine tools listed in section 8 are implemented and tested. No LLM
+All ten tools listed in section 8 are implemented and tested. No LLM
 orchestration or provider dependency has been added; that belongs to Milestone 4.
 
 ## Milestone 4 — Sprint Agent

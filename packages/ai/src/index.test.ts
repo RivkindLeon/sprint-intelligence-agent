@@ -4,6 +4,7 @@ import { describe, it } from "node:test";
 import type { Sprint, SprintHistory } from "@sprint-intelligence/domain";
 
 import {
+  createGetBlockedIssuesTool,
   createGetDependencyRisksTool,
   createGetDeveloperWorkloadTool,
   createGetIssueTool,
@@ -139,6 +140,109 @@ describe("SprintAnalysis output schema", () => {
     });
 
     assert.equal(result.success, false);
+  });
+});
+
+describe("getBlockedIssues tool", () => {
+  const sprintWithBlockedWork: Sprint = {
+    ...sprint,
+    tasks: [
+      {
+        id: "AUTH-198",
+        title: "Rotate invitation signing keys",
+        assigneeId: "dev-1",
+        estimateHours: 8,
+        status: "todo",
+        dependencies: [],
+      },
+      {
+        id: "AUTH-231",
+        title: "Send secure team invitations",
+        assigneeId: "dev-1",
+        estimateHours: 8,
+        status: "in_progress",
+        dependencies: ["AUTH-198"],
+      },
+      {
+        id: "PAY-205",
+        title: "Make payment retries idempotent",
+        assigneeId: "dev-2",
+        estimateHours: 5,
+        status: "todo",
+        dependencies: ["OPS-91"],
+      },
+    ],
+  };
+  const repository = {
+    async getSprintById(sprintId: string) {
+      return sprintId === sprintWithBlockedWork.id
+        ? sprintWithBlockedWork
+        : undefined;
+    },
+  };
+  const tool = createGetBlockedIssuesTool(repository);
+
+  it("returns exact unfinished and missing dependency evidence", async () => {
+    assert.deepEqual(await tool.execute({ sprintId: sprint.id }), {
+      sprintId: "sprint-24",
+      blockedIssues: [
+        {
+          issueId: "AUTH-231",
+          issueTitle: "Send secure team invitations",
+          assigneeId: "dev-1",
+          blockedBy: [{ issueId: "AUTH-198", status: "todo" }],
+          estimateHours: 8,
+          reason: "AUTH-198:todo",
+        },
+        {
+          issueId: "PAY-205",
+          issueTitle: "Make payment retries idempotent",
+          assigneeId: "dev-2",
+          blockedBy: [{ issueId: "OPS-91", status: "missing" }],
+          estimateHours: 5,
+          reason: "OPS-91:missing",
+        },
+      ],
+      blockedIssueCount: 2,
+      blockedHours: 13,
+      blockedIssueIds: ["AUTH-231", "PAY-205"],
+    });
+  });
+
+  it("returns an empty result when no work is blocked", async () => {
+    const noBlockedWorkTool = createGetBlockedIssuesTool({
+      async getSprintById() {
+        return { ...sprint, tasks: [] };
+      },
+    });
+
+    assert.deepEqual(await noBlockedWorkTool.execute({ sprintId: sprint.id }), {
+      sprintId: "sprint-24",
+      blockedIssues: [],
+      blockedIssueCount: 0,
+      blockedHours: 0,
+      blockedIssueIds: [],
+    });
+  });
+
+  it("validates input before querying the repository", async () => {
+    let queryCount = 0;
+    const validatingTool = createGetBlockedIssuesTool({
+      async getSprintById() {
+        queryCount += 1;
+        return sprintWithBlockedWork;
+      },
+    });
+
+    await assert.rejects(validatingTool.execute({ sprintId: "", extra: true }));
+    assert.equal(queryCount, 0);
+  });
+
+  it("reports a missing sprint explicitly", async () => {
+    await assert.rejects(
+      tool.execute({ sprintId: "missing" }),
+      /Sprint not found: missing/,
+    );
   });
 });
 
