@@ -7,7 +7,7 @@ development job reads this file to decide what to work on next.
 sessions — each run starts with no history of previous runs. If it claims work
 that was not done, the next session builds on a lie.
 
-Last verified against the code: 2026-10-04.
+Last verified against the code: 2026-10-05.
 
 ---
 
@@ -214,9 +214,16 @@ call records its validated input, duration, status, compact result shape or
 error, and successful runs store the final validated analysis. Tests cover both
 successful and failed tool executions and run lifecycle transitions.
 
-Still unfinished: add an end-to-end analysis test. A concrete provider and
-environment-configuration factory is also still needed before the application
-can make live model calls.
+An end-to-end integration test now loads the checked-in synthetic sprint and
+runs the real agent, deterministic health source, and typed tools against a
+fake model. It verifies structured output, exact issue and metric evidence,
+replacement of the model's health score, the complete tool sequence, and
+persisted run/tool-call observability without calling a real LLM. The test's
+fixture bridge documents the temporary story-point-to-hours mapping required
+by the legacy analytics model.
+
+Still unfinished: a concrete provider and environment-configuration factory is
+needed before the application can make live model calls.
 
 ## Milestone 5 — Dashboard
 
@@ -235,9 +242,9 @@ can make live model calls.
 ## Where the next session should start
 
 Continue with the earliest incomplete milestone: **Milestone 4 — Sprint
-Agent**. Add the end-to-end analysis test over the synthetic sprint and a fake
-model, verifying structured output, deterministic health, evidence, tool
-execution, and persisted observability without calling a real LLM.
+Agent**. Add the concrete provider and environment-configuration factory so the
+API can construct a live model adapter without spreading provider-specific
+configuration through the application.
 
 ## Correction for whoever edits the job prompt
 
