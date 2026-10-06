@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import type { LanguageModel } from "ai";
+import { ZodError } from "zod";
 
 import { VercelAiSdkSprintAnalysisModel } from "./vercel-ai-sdk-model.js";
 import {
@@ -26,7 +27,13 @@ describe("AI model configuration", () => {
   });
 
   it("rejects missing configuration and unsupported providers", () => {
-    assert.throws(() => parseAiModelConfig({}), /AI_MODEL is required/);
+    assert.throws(
+      () => parseAiModelConfig({}),
+      (error) =>
+        error instanceof ZodError &&
+        error.issues.some((issue) => issue.path[0] === "modelId") &&
+        error.issues.some((issue) => issue.path[0] === "apiKey"),
+    );
     assert.throws(
       () =>
         parseAiModelConfig({
@@ -34,7 +41,9 @@ describe("AI model configuration", () => {
           AI_MODEL: "claude",
           AI_API_KEY: "test-key",
         }),
-      /Invalid option/,
+      (error) =>
+        error instanceof ZodError &&
+        error.issues.some((issue) => issue.path[0] === "provider"),
     );
   });
 });
