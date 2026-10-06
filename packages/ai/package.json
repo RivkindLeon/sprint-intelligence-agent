@@ -17,6 +17,7 @@
     "lint": "eslint src --max-warnings 0"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^4.0.83",
     "@sprint-intelligence/analytics": "workspace:*",
     "@sprint-intelligence/domain": "workspace:*",
     "ai": "^7.0.123",

@@ -7,7 +7,7 @@ development job reads this file to decide what to work on next.
 sessions — each run starts with no history of previous runs. If it claims work
 that was not done, the next session builds on a lie.
 
-Last verified against the code: 2026-10-05.
+Last verified against the code: 2026-10-06.
 
 ---
 
@@ -166,7 +166,7 @@ orchestration or provider dependency has been added; that belongs to Milestone 4
 
 ## Milestone 4 — Sprint Agent
 
-**Status: in progress.** `SprintAnalysisAgent` now provides a tested,
+**Status: complete.** `SprintAnalysisAgent` now provides a tested,
 provider-agnostic model boundary and a hard, configurable maximum number of
 model steps. It exposes only registered tools, validates every tool input and
 output, feeds tool results back to the model, validates the final structured
@@ -222,8 +222,15 @@ persisted run/tool-call observability without calling a real LLM. The test's
 fixture bridge documents the temporary story-point-to-hours mapping required
 by the legacy analytics model.
 
-Still unfinished: a concrete provider and environment-configuration factory is
-needed before the application can make live model calls.
+The live-model factory now validates `AI_PROVIDER`, `AI_MODEL`, and
+`AI_API_KEY`, constructs the OpenAI AI SDK provider in one isolated boundary,
+and returns the provider-agnostic model adapter plus non-secret provider/model
+identity for observability. Tests cover normalization, missing and unsupported
+configuration, and provider construction without making a live model call.
+
+The agent has a strict output contract, deterministic health scoring, evidence
+provenance, a bounded provider-agnostic tool loop, a concrete configurable
+provider, persistence, and end-to-end synthetic-sprint coverage.
 
 ## Milestone 5 — Dashboard
 
@@ -241,10 +248,10 @@ needed before the application can make live model calls.
 
 ## Where the next session should start
 
-Continue with the earliest incomplete milestone: **Milestone 4 — Sprint
-Agent**. Add the concrete provider and environment-configuration factory so the
-API can construct a live model adapter without spreading provider-specific
-configuration through the application.
+Continue with the earliest incomplete milestone: **Milestone 5 — Dashboard**.
+Start with the API read endpoints needed by the dashboard, using the existing
+database schema and shared contracts rather than embedding data access in the
+React application.
 
 ## Correction for whoever edits the job prompt
 
