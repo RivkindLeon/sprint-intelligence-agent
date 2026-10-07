@@ -7,7 +7,7 @@ development job reads this file to decide what to work on next.
 sessions — each run starts with no history of previous runs. If it claims work
 that was not done, the next session builds on a lie.
 
-Last verified against the code: 2026-10-06.
+Last verified against the code: 2026-10-07.
 
 ---
 
@@ -234,7 +234,12 @@ provider, persistence, and end-to-end synthetic-sprint coverage.
 
 ## Milestone 5 — Dashboard
 
-**Status: not started.**
+**Status: in progress.** The API now exposes `GET /api/sprints` through a
+PostgreSQL-backed repository and a strict shared response contract. It returns
+compact sprint identifiers, names, and dates in newest-first order. The shared
+contract and Fastify route pass local tests; a seeded PostgreSQL integration
+assertion is in the CI suite. The sprint detail and metrics endpoints, analysis
+endpoint, and dashboard UI are not implemented yet.
 
 ## Milestone 6 — Ask the Sprint
 
@@ -249,9 +254,8 @@ provider, persistence, and end-to-end synthetic-sprint coverage.
 ## Where the next session should start
 
 Continue with the earliest incomplete milestone: **Milestone 5 — Dashboard**.
-Start with the API read endpoints needed by the dashboard, using the existing
-database schema and shared contracts rather than embedding data access in the
-React application.
+Next, add `GET /api/sprints/:id` using the existing database schema and shared
+contracts. The database-backed sprint list is already available.
 
 ## Correction for whoever edits the job prompt
 

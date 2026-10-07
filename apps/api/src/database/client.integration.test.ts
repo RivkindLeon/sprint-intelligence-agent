@@ -6,6 +6,7 @@ import { migrate } from "drizzle-orm/postgres-js/migrator";
 import { AgentRunRepository } from "./agent-run-repository.js";
 import { createDatabaseConnection } from "./client.js";
 import { loadDemoDataset, seedDemoDataset } from "./seed.js";
+import { SprintListRepository } from "./sprint-list-repository.js";
 
 const runDatabaseIntegrationTest =
   process.env.RUN_DATABASE_INTEGRATION_TEST === "true";
@@ -80,6 +81,16 @@ describe("database connection", { skip: !runDatabaseIntegrationTest }, () => {
           .length,
         history: 5,
       });
+
+      const sprintList = await new SprintListRepository(db).list();
+      assert.deepEqual(sprintList, [
+        {
+          id: dataset.sprint.id,
+          name: dataset.sprint.name,
+          startDate: dataset.sprint.startDate,
+          endDate: dataset.sprint.endDate,
+        },
+      ]);
     } finally {
       await client.end();
     }
