@@ -91,6 +91,25 @@ describe("database connection", { skip: !runDatabaseIntegrationTest }, () => {
           endDate: dataset.sprint.endDate,
         },
       ]);
+
+      const sprintDetail = await new SprintListRepository(db).getById(
+        dataset.sprint.id,
+      );
+      assert.equal(sprintDetail?.id, dataset.sprint.id);
+      assert.equal(sprintDetail?.goal, dataset.sprint.goal);
+      assert.equal(sprintDetail?.developers.length, 6);
+      assert.equal(sprintDetail?.issues.length, 35);
+      for (const issue of dataset.issues) {
+        assert.deepEqual(
+          sprintDetail?.issues.find((item) => item.id === issue.id)
+            ?.dependencies,
+          [...issue.dependencies].sort(),
+        );
+      }
+      assert.equal(
+        await new SprintListRepository(db).getById("missing-sprint"),
+        undefined,
+      );
     } finally {
       await client.end();
     }

@@ -5,6 +5,7 @@ import {
   apiErrorSchema,
   healthResponseSchema,
   sprintListResponseSchema,
+  sprintDetailResponseSchema,
 } from "./index.js";
 
 describe("shared API contracts", () => {
@@ -39,6 +40,42 @@ describe("shared API contracts", () => {
     assert.equal(
       sprintListResponseSchema.safeParse({
         sprints: [{ ...response.sprints[0], issueCount: 35 }],
+      }).success,
+      false,
+    );
+  });
+
+  it("validates sprint detail and exact issue dependency evidence", () => {
+    const response = {
+      sprint: {
+        id: "sprint-24",
+        name: "Sprint 24",
+        goal: "Ship invitations",
+        startDate: "2026-09-01",
+        endDate: "2026-09-14",
+        developers: [{ id: "dev-anna", name: "Anna", capacityStoryPoints: 13 }],
+        issues: [
+          {
+            id: "AUTH-231",
+            title: "Invite users",
+            type: "story",
+            status: "blocked",
+            assigneeId: "dev-anna",
+            storyPoints: 5,
+            updatedAt: "2026-09-04T10:00:00.000Z",
+            acceptanceCriteria: null,
+            dependencies: ["AUTH-198"],
+          },
+        ],
+      },
+    };
+    assert.deepEqual(sprintDetailResponseSchema.parse(response), response);
+    assert.equal(
+      sprintDetailResponseSchema.safeParse({
+        sprint: {
+          ...response.sprint,
+          issues: [{ ...response.sprint.issues[0], dependencies: [5] }],
+        },
       }).success,
       false,
     );
