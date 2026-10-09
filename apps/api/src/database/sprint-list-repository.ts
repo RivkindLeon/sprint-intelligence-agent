@@ -1,16 +1,22 @@
-import { asc, desc, eq, inArray } from "drizzle-orm";
+import { asc, desc, eq, inArray, or } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
+import type { Activity } from "@sprint-intelligence/domain";
 
 import type {
   SprintDetailResponse,
   SprintListResponse,
+  SprintMetricsResponse,
 } from "@sprint-intelligence/shared";
 
+import { calculateSprintMetrics } from "../metrics.js";
+
 import {
+  activities,
   developers,
   issueDependencies,
   issues,
   sprintDevelopers,
+  sprintHistory,
   sprints,
 } from "./schema.js";
 import type * as schema from "./schema.js";
@@ -104,5 +110,38 @@ export class SprintListRepository {
         dependencies: dependenciesByIssue.get(issue.id) ?? [],
       })),
     };
+  }
+
+  async getMetricsById(
+    id: string,
+  ): Promise<SprintMetricsResponse["metrics"] | undefined> {
+    const detail = await this.getById(id);
+    if (!detail) return undefined;
+
+    const [activityRows, historyRows] = await Promise.all([
+      this.db
+        .select({
+          id: activities.id,
+          issueId: activities.issueId,
+          type: activities.type,
+          occurredAt: activities.occurredAt,
+          fromValue: activities.fromValue,
+          toValue: activities.toValue,
+        })
+        .from(activities)
+        .where(or(eq(activities.fromValue, id), eq(activities.toValue, id)))
+        .orderBy(asc(activities.occurredAt), asc(activities.id)),
+      this.db
+        .select()
+        .from(sprintHistory)
+        .orderBy(asc(sprintHistory.startedAt), asc(sprintHistory.id)),
+    ]);
+
+    const sprintActivities: Activity[] = activityRows.map((row) => ({
+      ...row,
+      fromValue: row.fromValue ?? undefined,
+      toValue: row.toValue ?? undefined,
+    }));
+    return calculateSprintMetrics(detail, sprintActivities, historyRows);
   }
 }

@@ -110,6 +110,30 @@ describe("database connection", { skip: !runDatabaseIntegrationTest }, () => {
         await new SprintListRepository(db).getById("missing-sprint"),
         undefined,
       );
+      const metrics = await new SprintListRepository(db).getMetricsById(
+        dataset.sprint.id,
+      );
+      assert.equal(metrics?.completion.totalIssues, 35);
+      assert.equal(
+        metrics?.completion.completedIssues,
+        dataset.issues.filter((issue) => issue.status === "done").length,
+      );
+      assert.deepEqual(
+        metrics?.blocked.issueIds,
+        dataset.issues
+          .filter((issue) => issue.status === "blocked")
+          .map((issue) => issue.id)
+          .sort(),
+      );
+      assert.equal(
+        metrics?.scope.addedIssueCount,
+        dataset.issues.filter((issue) => issue.addedToSprintAt).length,
+      );
+      assert.equal(metrics?.velocity.sprintCount, 5);
+      assert.equal(
+        await new SprintListRepository(db).getMetricsById("missing-sprint"),
+        undefined,
+      );
     } finally {
       await client.end();
     }
