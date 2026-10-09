@@ -6,6 +6,7 @@ import {
   healthResponseSchema,
   sprintListResponseSchema,
   sprintDetailResponseSchema,
+  sprintMetricsResponseSchema,
 } from "./index.js";
 
 describe("shared API contracts", () => {
@@ -75,6 +76,51 @@ describe("shared API contracts", () => {
         sprint: {
           ...response.sprint,
           issues: [{ ...response.sprint.issues[0], dependencies: [5] }],
+        },
+      }).success,
+      false,
+    );
+  });
+});
+
+describe("sprint metrics contract", () => {
+  it("requires bounded deterministic values and issue evidence", () => {
+    const response = {
+      metrics: {
+        sprintId: "sprint-24",
+        completion: {
+          totalIssues: 2,
+          completedIssues: 1,
+          completionPercent: 50,
+          totalStoryPoints: 5,
+          completedStoryPoints: 3,
+          storyPointCompletionPercent: 60,
+        },
+        blocked: { issueCount: 1, issueIds: ["AUTH-231"] },
+        scope: {
+          addedIssueCount: 1,
+          addedIssueIds: ["AUTH-231"],
+          netStoryPointChange: 3,
+          storyPointGrowthPercent: 150,
+        },
+        velocity: {
+          sprintCount: 1,
+          averageCompletedStoryPoints: 48,
+          completedStoryPointsBySprint: [
+            { sprintId: "sprint-23", completedStoryPoints: 48 },
+          ],
+        },
+      },
+    };
+    assert.deepEqual(sprintMetricsResponseSchema.parse(response), response);
+    assert.equal(
+      sprintMetricsResponseSchema.safeParse({
+        metrics: {
+          ...response.metrics,
+          completion: {
+            ...response.metrics.completion,
+            completionPercent: 101,
+          },
         },
       }).success,
       false,

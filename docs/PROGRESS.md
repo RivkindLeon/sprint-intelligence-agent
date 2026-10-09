@@ -7,7 +7,7 @@ development job reads this file to decide what to work on next.
 sessions — each run starts with no history of previous runs. If it claims work
 that was not done, the next session builds on a lie.
 
-Last verified against the code: 2026-10-08.
+Last verified against the code: 2026-10-09.
 
 ---
 
@@ -243,8 +243,17 @@ assertion is in the CI suite.
 `GET /api/sprints/:id` now returns sprint metadata, its team, and canonical
 issues with exact dependency IDs through a strict shared response contract. An
 unknown sprint returns a structured 404. Shared-contract and route tests pass
-locally; the seeded PostgreSQL integration assertion is in the CI suite. The
-metrics and analysis endpoints and dashboard UI are not implemented yet.
+locally; the seeded PostgreSQL integration assertion is in the CI suite.
+
+`GET /api/sprints/:id/metrics` now has a strict shared contract and a
+PostgreSQL-backed reader. It returns issue and story-point completion, exact
+blocked issue IDs, deterministic scope-change metrics, and historical team
+velocity. The scope and velocity values reuse the analytics package; no model
+calculates them. Shared-contract, route, and pure calculation tests pass
+locally. A seeded PostgreSQL integration assertion is in the CI suite but was
+not run locally because PostgreSQL/Docker are unavailable on this host.
+This is not a full dashboard yet: the analysis endpoint, deterministic health
+score in an API response, and dashboard UI remain unfinished.
 
 ## Milestone 6 — Ask the Sprint
 
@@ -259,8 +268,9 @@ metrics and analysis endpoints and dashboard UI are not implemented yet.
 ## Where the next session should start
 
 Continue with the earliest incomplete milestone: **Milestone 5 — Dashboard**.
-Next, add `GET /api/sprints/:id/metrics` using deterministic analytics and the
-existing database schema. The sprint list and detail endpoints are available.
+Next, add the analysis endpoint and wire its deterministic health score and
+evidence-backed risks into the API. The sprint list, detail, and metrics
+endpoints are available; the dashboard UI is not implemented.
 
 ## Correction for whoever edits the job prompt
 

@@ -32,6 +32,12 @@ importers:
       '@sprint-intelligence/ai':
         specifier: workspace:*
         version: link:../../packages/ai
+      '@sprint-intelligence/analytics':
+        specifier: workspace:*
+        version: link:../../packages/analytics
+      '@sprint-intelligence/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
       '@sprint-intelligence/shared':
         specifier: workspace:*
         version: link:../../packages/shared

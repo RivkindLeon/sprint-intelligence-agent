@@ -70,3 +70,53 @@ export const sprintDetailResponseSchema = z
   .strict();
 
 export type SprintDetailResponse = z.infer<typeof sprintDetailResponseSchema>;
+
+export const sprintMetricsResponseSchema = z
+  .object({
+    metrics: z
+      .object({
+        sprintId: z.string().min(1),
+        completion: z
+          .object({
+            totalIssues: z.number().int().nonnegative(),
+            completedIssues: z.number().int().nonnegative(),
+            completionPercent: z.number().min(0).max(100),
+            totalStoryPoints: z.number().int().nonnegative(),
+            completedStoryPoints: z.number().int().nonnegative(),
+            storyPointCompletionPercent: z.number().min(0).max(100),
+          })
+          .strict(),
+        blocked: z
+          .object({
+            issueCount: z.number().int().nonnegative(),
+            issueIds: z.array(z.string().min(1)),
+          })
+          .strict(),
+        scope: z
+          .object({
+            addedIssueCount: z.number().int().nonnegative(),
+            addedIssueIds: z.array(z.string().min(1)),
+            netStoryPointChange: z.number(),
+            storyPointGrowthPercent: z.number(),
+          })
+          .strict(),
+        velocity: z
+          .object({
+            sprintCount: z.number().int().nonnegative(),
+            averageCompletedStoryPoints: z.number().nonnegative(),
+            completedStoryPointsBySprint: z.array(
+              z
+                .object({
+                  sprintId: z.string().min(1),
+                  completedStoryPoints: z.number().int().nonnegative(),
+                })
+                .strict(),
+            ),
+          })
+          .strict(),
+      })
+      .strict(),
+  })
+  .strict();
+
+export type SprintMetricsResponse = z.infer<typeof sprintMetricsResponseSchema>;

@@ -5,6 +5,7 @@ import {
   apiErrorSchema,
   sprintDetailResponseSchema,
   sprintListResponseSchema,
+  sprintMetricsResponseSchema,
 } from "@sprint-intelligence/shared";
 
 import { buildApp } from "./app.js";
@@ -44,6 +45,57 @@ const app = buildApp({
       ],
     };
   },
+  async getMetricsById(id) {
+    if (id !== "sprint-24") return undefined;
+    return {
+      sprintId: id,
+      completion: {
+        totalIssues: 1,
+        completedIssues: 0,
+        completionPercent: 0,
+        totalStoryPoints: 5,
+        completedStoryPoints: 0,
+        storyPointCompletionPercent: 0,
+      },
+      blocked: { issueCount: 1, issueIds: ["AUTH-231"] },
+      scope: {
+        addedIssueCount: 0,
+        addedIssueIds: [],
+        netStoryPointChange: 0,
+        storyPointGrowthPercent: 0,
+      },
+      velocity: {
+        sprintCount: 0,
+        averageCompletedStoryPoints: 0,
+        completedStoryPointsBySprint: [],
+      },
+    };
+  },
+});
+
+describe("sprint metrics endpoint", () => {
+  it("returns validated metrics and exact blocked-issue evidence", async () => {
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/sprints/sprint-24/metrics",
+    });
+    assert.equal(response.statusCode, 200);
+    const { metrics } = sprintMetricsResponseSchema.parse(response.json());
+    assert.equal(metrics.completion.totalStoryPoints, 5);
+    assert.deepEqual(metrics.blocked.issueIds, ["AUTH-231"]);
+  });
+
+  it("returns a structured 404 for an unknown sprint", async () => {
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/sprints/unknown/metrics",
+    });
+    assert.equal(response.statusCode, 404);
+    assert.equal(
+      apiErrorSchema.parse(response.json()).message,
+      "Sprint not found",
+    );
+  });
 });
 
 describe("sprint detail endpoint", () => {
