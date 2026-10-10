@@ -2,11 +2,16 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { migrate } from "drizzle-orm/postgres-js/migrator";
+import { eq } from "drizzle-orm";
+
+import { createSprintAnalyzer } from "../analysis-service.js";
 
 import { AgentRunRepository } from "./agent-run-repository.js";
 import { createDatabaseConnection } from "./client.js";
 import { loadDemoDataset, seedDemoDataset } from "./seed.js";
 import { SprintListRepository } from "./sprint-list-repository.js";
+import { SprintAnalysisRepository } from "./sprint-analysis-repository.js";
+import { agentRuns } from "./schema.js";
 
 const runDatabaseIntegrationTest =
   process.env.RUN_DATABASE_INTEGRATION_TEST === "true";
@@ -207,6 +212,75 @@ describe("database connection", { skip: !runDatabaseIntegrationTest }, () => {
       assert.equal(failedRun?.error, "provider unavailable");
       assert.equal(failedRun?.finalResult, null);
       assert.equal(await repository.getById("missing-run"), undefined);
+    } finally {
+      await client.end();
+    }
+  });
+
+  it("analyzes a seeded sprint through the API service and persists evidence", async () => {
+    const { client, db } = createDatabaseConnection();
+    try {
+      await migrate(db, { migrationsFolder: "drizzle" });
+      await seedDemoDataset(db, await loadDemoDataset());
+      const repository = new SprintAnalysisRepository(db);
+      const sprint = await repository.getSprintById("sprint-24");
+      assert.equal(sprint?.issues?.length, 35);
+      assert.equal(sprint?.tasks.length, 35);
+      assert.ok(
+        sprint?.issues
+          ?.find((issue) => issue.id === "PAY-205")
+          ?.dependencies.includes("OPS-91"),
+      );
+
+      const analyzer = createSprintAnalyzer(db, {}, () => ({
+        provider: "openai",
+        modelId: "integration-fake-model",
+        model: {
+          async nextStep(request) {
+            if (request.step === 1) {
+              return {
+                type: "tool_call",
+                toolName: "getBlockedIssues",
+                input: { sprintId: request.sprintId },
+              };
+            }
+            return {
+              type: "final",
+              analysis: {
+                healthScore: 1,
+                summary: "A blocked dependency threatens delivery.",
+                risks: [
+                  {
+                    severity: "critical",
+                    category: "blocker",
+                    title: "Payment work is blocked",
+                    explanation: "PAY-205 depends on unfinished OPS-91.",
+                    evidence: [{ issueId: "PAY-205" }, { issueId: "OPS-91" }],
+                    confidence: 0.9,
+                  },
+                ],
+              },
+            };
+          },
+        },
+      }));
+      const analysis = await analyzer.analyze("sprint-24");
+      assert.notEqual(analysis.healthScore, 1);
+      assert.deepEqual(analysis.risks[0]?.evidence, [
+        { issueId: "PAY-205" },
+        { issueId: "OPS-91" },
+      ]);
+      const [run] = await db
+        .select()
+        .from(agentRuns)
+        .where(eq(agentRuns.model, "openai/integration-fake-model"));
+      assert.equal(run?.status, "completed");
+      assert.deepEqual(run?.finalResult, analysis);
+      const trace = await new AgentRunRepository(db).getById(run!.id);
+      assert.deepEqual(
+        trace?.toolCalls.map((call) => call.toolName),
+        ["getBlockedIssues"],
+      );
     } finally {
       await client.end();
     }

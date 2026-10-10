@@ -78,7 +78,7 @@ export interface AgentRunPersistence {
 const DEFAULT_MAX_STEPS = 8;
 
 const SYSTEM_INSTRUCTION =
-  "Investigate sprint delivery risks using the available tools. Every risk must cite exact issue or metric evidence from tool results. Do not calculate metrics or change the supplied deterministic health score.";
+  "Investigate sprint delivery risks using the available tools. Every risk must cite at least one exact issue ID from tool results; include relevant computed metrics as additional evidence. Do not calculate metrics or change the supplied deterministic health score.";
 
 function hasValue(value: unknown, expected: string | number): boolean {
   if (Object.is(value, expected)) return true;

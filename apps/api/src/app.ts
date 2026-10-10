@@ -5,11 +5,13 @@ import {
   sprintDetailResponseSchema,
   sprintListResponseSchema,
   sprintMetricsResponseSchema,
+  sprintAnalysisResponseSchema,
   type SprintDetailResponse,
   type HealthResponse,
   type SprintListResponse,
   type SprintMetricsResponse,
 } from "@sprint-intelligence/shared";
+import type { SprintAnalyzer } from "./analysis-service.js";
 
 export interface SprintListReader {
   list(): Promise<SprintListResponse["sprints"]>;
@@ -19,7 +21,10 @@ export interface SprintListReader {
   ): Promise<SprintMetricsResponse["metrics"] | undefined>;
 }
 
-export function buildApp(sprintListReader: SprintListReader): FastifyInstance {
+export function buildApp(
+  sprintListReader: SprintListReader,
+  analyzer: SprintAnalyzer,
+): FastifyInstance {
   const app = Fastify({ logger: false });
 
   app.get<{ Reply: HealthResponse }>("/health", async () =>
@@ -44,6 +49,25 @@ export function buildApp(sprintListReader: SprintListReader): FastifyInstance {
         );
       }
       return sprintDetailResponseSchema.parse({ sprint });
+    },
+  );
+
+  app.post<{ Params: { id: string } }>(
+    "/api/sprints/:id/analyze",
+    async (request, reply) => {
+      const sprint = await sprintListReader.getById(request.params.id);
+      if (!sprint) {
+        return reply.code(404).send(
+          apiErrorSchema.parse({
+            statusCode: 404,
+            error: "Not Found",
+            message: "Sprint not found",
+          }),
+        );
+      }
+      return sprintAnalysisResponseSchema.parse({
+        analysis: await analyzer.analyze(sprint.id),
+      });
     },
   );
 
