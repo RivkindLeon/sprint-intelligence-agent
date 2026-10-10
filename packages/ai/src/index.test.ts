@@ -110,6 +110,21 @@ describe("SprintAnalysis output schema", () => {
     assert.equal(result.success, false);
   });
 
+  it("rejects a risk supported only by an aggregate metric", () => {
+    assert.equal(
+      sprintAnalysisSchema.safeParse({
+        ...validAnalysis,
+        risks: [
+          {
+            ...validAnalysis.risks[0],
+            evidence: [{ metric: "blockedIssueCount", value: 3 }],
+          },
+        ],
+      }).success,
+      false,
+    );
+  });
+
   it("rejects evidence that identifies neither an issue nor a metric", () => {
     const result = sprintAnalysisSchema.safeParse({
       ...validAnalysis,

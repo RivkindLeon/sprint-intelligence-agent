@@ -233,6 +233,7 @@ test("analyzes the synthetic sprint end to end without a real LLM", async () => 
               explanation:
                 "Several issues do not define verifiable acceptance criteria.",
               evidence: [
+                { issueId: "AUTH-231" },
                 {
                   metric: "missingAcceptanceCriteriaCount",
                   value: quality.missingAcceptanceCriteriaCount,

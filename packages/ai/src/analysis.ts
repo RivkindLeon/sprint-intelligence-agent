@@ -30,7 +30,13 @@ export const sprintRiskSchema = z
     category: riskCategorySchema,
     title: z.string().trim().min(1),
     explanation: z.string().trim().min(1),
-    evidence: z.array(riskEvidenceSchema).min(1),
+    evidence: z
+      .array(riskEvidenceSchema)
+      .min(1)
+      .refine(
+        (items) => items.some((item) => item.issueId !== undefined),
+        "Every risk must cite a specific issue",
+      ),
     recommendation: z.string().trim().min(1).optional(),
     confidence: z.number().min(0).max(1),
   })

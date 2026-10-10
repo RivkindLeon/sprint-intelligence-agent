@@ -7,6 +7,7 @@ import {
   sprintListResponseSchema,
   sprintDetailResponseSchema,
   sprintMetricsResponseSchema,
+  sprintAnalysisResponseSchema,
 } from "./index.js";
 
 describe("shared API contracts", () => {
@@ -76,6 +77,57 @@ describe("shared API contracts", () => {
         sprint: {
           ...response.sprint,
           issues: [{ ...response.sprint.issues[0], dependencies: [5] }],
+        },
+      }).success,
+      false,
+    );
+  });
+});
+
+describe("sprint analysis contract", () => {
+  it("requires bounded scores and evidence on every risk", () => {
+    const response = {
+      analysis: {
+        healthScore: 68,
+        summary: "A dependency threatens delivery.",
+        risks: [
+          {
+            severity: "high",
+            category: "dependency",
+            title: "Blocked invitation",
+            explanation: "AUTH-231 depends on AUTH-198.",
+            evidence: [{ issueId: "AUTH-231" }],
+            confidence: 0.9,
+          },
+        ],
+      },
+    };
+    assert.deepEqual(sprintAnalysisResponseSchema.parse(response), response);
+    assert.equal(
+      sprintAnalysisResponseSchema.safeParse({
+        analysis: {
+          ...response.analysis,
+          risks: [{ ...response.analysis.risks[0], evidence: [] }],
+        },
+      }).success,
+      false,
+    );
+    assert.equal(
+      sprintAnalysisResponseSchema.safeParse({
+        analysis: { ...response.analysis, healthScore: 101 },
+      }).success,
+      false,
+    );
+    assert.equal(
+      sprintAnalysisResponseSchema.safeParse({
+        analysis: {
+          ...response.analysis,
+          risks: [
+            {
+              ...response.analysis.risks[0],
+              evidence: [{ metric: "blockedIssueCount", value: 1 }],
+            },
+          ],
         },
       }).success,
       false,

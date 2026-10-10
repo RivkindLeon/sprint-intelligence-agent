@@ -120,3 +120,57 @@ export const sprintMetricsResponseSchema = z
   .strict();
 
 export type SprintMetricsResponse = z.infer<typeof sprintMetricsResponseSchema>;
+
+export const sprintAnalysisResponseSchema = z
+  .object({
+    analysis: z
+      .object({
+        healthScore: z.number().int().min(0).max(100),
+        summary: z.string().trim().min(1),
+        risks: z.array(
+          z
+            .object({
+              severity: z.enum(["low", "medium", "high", "critical"]),
+              category: z.enum([
+                "capacity",
+                "dependency",
+                "scope",
+                "blocker",
+                "quality",
+                "delivery",
+              ]),
+              title: z.string().trim().min(1),
+              explanation: z.string().trim().min(1),
+              evidence: z
+                .array(
+                  z
+                    .object({
+                      issueId: z.string().trim().min(1).optional(),
+                      metric: z.string().trim().min(1).optional(),
+                      value: z
+                        .union([z.string(), z.number().finite()])
+                        .optional(),
+                    })
+                    .strict()
+                    .refine(
+                      (item) =>
+                        item.issueId !== undefined || item.metric !== undefined,
+                    ),
+                )
+                .min(1)
+                .refine((items) =>
+                  items.some((item) => item.issueId !== undefined),
+                ),
+              recommendation: z.string().trim().min(1).optional(),
+              confidence: z.number().min(0).max(1),
+            })
+            .strict(),
+        ),
+      })
+      .strict(),
+  })
+  .strict();
+
+export type SprintAnalysisResponse = z.infer<
+  typeof sprintAnalysisResponseSchema
+>;

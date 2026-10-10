@@ -7,7 +7,7 @@ development job reads this file to decide what to work on next.
 sessions — each run starts with no history of previous runs. If it claims work
 that was not done, the next session builds on a lie.
 
-Last verified against the code: 2026-10-09.
+Last verified against the code: 2026-10-10.
 
 ---
 
@@ -252,8 +252,23 @@ velocity. The scope and velocity values reuse the analytics package; no model
 calculates them. Shared-contract, route, and pure calculation tests pass
 locally. A seeded PostgreSQL integration assertion is in the CI suite but was
 not run locally because PostgreSQL/Docker are unavailable on this host.
-This is not a full dashboard yet: the analysis endpoint, deterministic health
-score in an API response, and dashboard UI remain unfinished.
+
+`POST /api/sprints/:id/analyze` now invokes the existing bounded
+`SprintAnalysisAgent` with all ten typed tools, a PostgreSQL-backed adapter,
+the deterministic repository-derived health score, and persisted run/tool
+observability. It returns the validated health score and evidence-backed risks
+through a strict shared API contract; unknown sprints return 404 without
+calling the model. AI credentials are read only when analysis is requested, so
+read-only API routes remain available without them. The agent and API schemas
+now require every risk to cite at least one exact issue ID, not only an
+aggregate metric. Route, contract, and agent tests pass locally. A seeded
+PostgreSQL integration test exercises the service with a fake model and checks
+the saved analysis and tool trace; it was not run locally because PostgreSQL
+is unavailable on this host. Live provider calls have not been verified.
+
+This is not a full dashboard yet: the agent-run retrieval endpoint and
+dashboard UI remain unfinished. The analysis response does not expose a run ID
+for an activity panel yet.
 
 ## Milestone 6 — Ask the Sprint
 
@@ -268,8 +283,8 @@ score in an API response, and dashboard UI remain unfinished.
 ## Where the next session should start
 
 Continue with the earliest incomplete milestone: **Milestone 5 — Dashboard**.
-Next, add the analysis endpoint and wire its deterministic health score and
-evidence-backed risks into the API. The sprint list, detail, and metrics
+Next, expose an agent-run ID and retrieval endpoint for the activity panel,
+then build the dashboard UI. The sprint list, detail, metrics, and analysis
 endpoints are available; the dashboard UI is not implemented.
 
 ## Correction for whoever edits the job prompt

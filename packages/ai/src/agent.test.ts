@@ -185,7 +185,10 @@ describe("SprintAnalysisAgent", () => {
           risks: [
             {
               ...finalAnalysis.risks[0],
-              evidence: [{ metric: "completedStoryPoints", value: 21 }],
+              evidence: [
+                { issueId: "AUTH-2" },
+                { metric: "completedStoryPoints", value: 21 },
+              ],
             },
           ],
         },
