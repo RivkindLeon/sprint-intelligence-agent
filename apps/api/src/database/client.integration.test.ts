@@ -196,6 +196,30 @@ describe("database connection", { skip: !runDatabaseIntegrationTest }, () => {
           { step: 2, toolName: "getDependencyRisks" },
         ],
       );
+      const publicRun = await repository.getPublicById(completedRunId);
+      assert.equal(publicRun?.id, completedRunId);
+      assert.deepEqual(
+        publicRun?.toolCalls.map(({ step, toolName, durationMs, status }) => ({
+          step,
+          toolName,
+          durationMs,
+          status,
+        })),
+        [
+          {
+            step: 1,
+            toolName: "getSprintOverview",
+            durationMs: 7,
+            status: "completed",
+          },
+          {
+            step: 2,
+            toolName: "getDependencyRisks",
+            durationMs: 19,
+            status: "completed",
+          },
+        ],
+      );
 
       const failedRunId = await repository.start({
         sprintId: "sprint-24",
@@ -212,6 +236,7 @@ describe("database connection", { skip: !runDatabaseIntegrationTest }, () => {
       assert.equal(failedRun?.error, "provider unavailable");
       assert.equal(failedRun?.finalResult, null);
       assert.equal(await repository.getById("missing-run"), undefined);
+      assert.equal(await repository.getPublicById("missing-run"), undefined);
     } finally {
       await client.end();
     }
@@ -265,8 +290,8 @@ describe("database connection", { skip: !runDatabaseIntegrationTest }, () => {
         },
       }));
       const analysis = await analyzer.analyze("sprint-24");
-      assert.notEqual(analysis.healthScore, 1);
-      assert.deepEqual(analysis.risks[0]?.evidence, [
+      assert.notEqual(analysis.analysis.healthScore, 1);
+      assert.deepEqual(analysis.analysis.risks[0]?.evidence, [
         { issueId: "PAY-205" },
         { issueId: "OPS-91" },
       ]);
@@ -275,7 +300,8 @@ describe("database connection", { skip: !runDatabaseIntegrationTest }, () => {
         .from(agentRuns)
         .where(eq(agentRuns.model, "openai/integration-fake-model"));
       assert.equal(run?.status, "completed");
-      assert.deepEqual(run?.finalResult, analysis);
+      assert.equal(analysis.runId, run?.id);
+      assert.deepEqual(run?.finalResult, analysis.analysis);
       const trace = await new AgentRunRepository(db).getById(run!.id);
       assert.deepEqual(
         trace?.toolCalls.map((call) => call.toolName),

@@ -21,7 +21,9 @@ import { SprintAnalysisRepository } from "./database/sprint-analysis-repository.
 import type * as schema from "./database/schema.js";
 
 export interface SprintAnalyzer {
-  analyze(sprintId: string): Promise<SprintAnalysis>;
+  analyze(
+    sprintId: string,
+  ): Promise<{ runId: string; analysis: SprintAnalysis }>;
 }
 
 export function createSprintAnalyzer(
@@ -50,12 +52,21 @@ export function createSprintAnalyzer(
       // Defer AI configuration until analysis is requested. Read-only endpoints
       // remain usable without credentials.
       const configured = modelFactory(environment);
-      return new SprintAnalysisAgent(configured.model, tools, health, {
-        observability: {
-          model: `${configured.provider}/${configured.modelId}`,
-          repository: runRepository,
+      const result = await new SprintAnalysisAgent(
+        configured.model,
+        tools,
+        health,
+        {
+          observability: {
+            model: `${configured.provider}/${configured.modelId}`,
+            repository: runRepository,
+          },
         },
-      }).analyze(sprintId);
+      ).analyzeWithRun(sprintId);
+      if (result.runId === undefined) {
+        throw new Error("Persisted sprint analysis did not produce a run ID");
+      }
+      return { runId: result.runId, analysis: result.analysis };
     },
   };
 }

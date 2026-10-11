@@ -7,7 +7,7 @@ development job reads this file to decide what to work on next.
 sessions — each run starts with no history of previous runs. If it claims work
 that was not done, the next session builds on a lie.
 
-Last verified against the code: 2026-10-10.
+Last verified against the code: 2026-10-11.
 
 ---
 
@@ -266,9 +266,15 @@ PostgreSQL integration test exercises the service with a fake model and checks
 the saved analysis and tool trace; it was not run locally because PostgreSQL
 is unavailable on this host. Live provider calls have not been verified.
 
-This is not a full dashboard yet: the agent-run retrieval endpoint and
-dashboard UI remain unfinished. The analysis response does not expose a run ID
-for an activity panel yet.
+The analysis response now includes the persisted agent-run ID. The strict
+`GET /api/agent-runs/:id` contract returns run identity, model, lifecycle,
+error, and ordered tool name/duration/status trace without exposing raw tool
+results or hidden reasoning. Unknown runs return 404. Contract and route tests
+pass locally; PostgreSQL retrieval assertions are in CI but were not run
+locally because PostgreSQL is unavailable on this host.
+
+This is not a full dashboard yet: the dashboard UI remains unfinished. The
+retrieval response has the activity-panel fields but the panel does not exist.
 
 ## Milestone 6 — Ask the Sprint
 
@@ -283,9 +289,8 @@ for an activity panel yet.
 ## Where the next session should start
 
 Continue with the earliest incomplete milestone: **Milestone 5 — Dashboard**.
-Next, expose an agent-run ID and retrieval endpoint for the activity panel,
-then build the dashboard UI. The sprint list, detail, metrics, and analysis
-endpoints are available; the dashboard UI is not implemented.
+Next, build the dashboard UI using the available sprint list, detail, metrics,
+analysis, and agent-run endpoints. The dashboard UI is not implemented.
 
 ## Correction for whoever edits the job prompt
 

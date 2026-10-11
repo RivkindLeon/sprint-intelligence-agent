@@ -163,6 +163,12 @@ export class SprintAnalysisAgent {
   }
 
   async analyze(sprintId: string): Promise<SprintAnalysis> {
+    return (await this.analyzeWithRun(sprintId)).analysis;
+  }
+
+  async analyzeWithRun(
+    sprintId: string,
+  ): Promise<{ runId: string | undefined; analysis: SprintAnalysis }> {
     const parsedSprintId = z.string().trim().min(1).parse(sprintId);
     const now = this.observability?.now ?? (() => new Date());
     const runId = await this.observability?.repository.start({
@@ -179,7 +185,7 @@ export class SprintAnalysisAgent {
           finalResult: toJsonValue(result),
         });
       }
-      return result;
+      return { runId, analysis: result };
     } catch (error) {
       if (runId !== undefined) {
         await this.observability!.repository.fail(runId, {

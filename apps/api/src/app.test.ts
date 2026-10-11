@@ -7,6 +7,7 @@ import {
   sprintListResponseSchema,
   sprintMetricsResponseSchema,
   sprintAnalysisResponseSchema,
+  agentRunResponseSchema,
 } from "@sprint-intelligence/shared";
 
 import { buildApp } from "./app.js";
@@ -79,16 +80,42 @@ const app = buildApp(
     async analyze(sprintId) {
       analyzedSprintIds.push(sprintId);
       return {
-        healthScore: 68,
-        summary: "An unfinished dependency threatens delivery.",
-        risks: [
+        runId: "123e4567-e89b-42d3-a456-426614174000",
+        analysis: {
+          healthScore: 68,
+          summary: "An unfinished dependency threatens delivery.",
+          risks: [
+            {
+              severity: "critical",
+              category: "dependency",
+              title: "Invitation work is blocked",
+              explanation: "AUTH-231 depends on unfinished AUTH-198.",
+              evidence: [{ issueId: "AUTH-231" }, { issueId: "AUTH-198" }],
+              confidence: 0.95,
+            },
+          ],
+        },
+      };
+    },
+  },
+  {
+    async getById(id) {
+      if (id !== "123e4567-e89b-42d3-a456-426614174000") return undefined;
+      return {
+        id,
+        sprintId: "sprint-24",
+        model: "openai/test-model",
+        status: "completed",
+        startedAt: "2026-10-11T16:30:00.000Z",
+        endedAt: "2026-10-11T16:30:01.000Z",
+        error: null,
+        toolCalls: [
           {
-            severity: "critical",
-            category: "dependency",
-            title: "Invitation work is blocked",
-            explanation: "AUTH-231 depends on unfinished AUTH-198.",
-            evidence: [{ issueId: "AUTH-231" }, { issueId: "AUTH-198" }],
-            confidence: 0.95,
+            step: 1,
+            toolName: "getBlockedIssues",
+            durationMs: 21,
+            status: "completed",
+            error: null,
           },
         ],
       };
@@ -103,7 +130,10 @@ describe("sprint analysis endpoint", () => {
       url: "/api/sprints/sprint-24/analyze",
     });
     assert.equal(response.statusCode, 200);
-    const { analysis } = sprintAnalysisResponseSchema.parse(response.json());
+    const { analysis, runId } = sprintAnalysisResponseSchema.parse(
+      response.json(),
+    );
+    assert.equal(runId, "123e4567-e89b-42d3-a456-426614174000");
     assert.equal(analysis.healthScore, 68);
     assert.deepEqual(analysis.risks[0]?.evidence, [
       { issueId: "AUTH-231" },
@@ -123,6 +153,39 @@ describe("sprint analysis endpoint", () => {
       "Sprint not found",
     );
     assert.deepEqual(analyzedSprintIds, ["sprint-24"]);
+  });
+});
+
+describe("agent run endpoint", () => {
+  it("returns an ordered compact tool trace for the analysis run", async () => {
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/agent-runs/123e4567-e89b-42d3-a456-426614174000",
+    });
+    assert.equal(response.statusCode, 200);
+    const { run } = agentRunResponseSchema.parse(response.json());
+    assert.equal(run.model, "openai/test-model");
+    assert.deepEqual(run.toolCalls, [
+      {
+        step: 1,
+        toolName: "getBlockedIssues",
+        durationMs: 21,
+        status: "completed",
+        error: null,
+      },
+    ]);
+  });
+
+  it("returns a structured 404 for an unknown run", async () => {
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/agent-runs/unknown",
+    });
+    assert.equal(response.statusCode, 404);
+    assert.equal(
+      apiErrorSchema.parse(response.json()).message,
+      "Agent run not found",
+    );
   });
 });
 

@@ -123,6 +123,7 @@ export type SprintMetricsResponse = z.infer<typeof sprintMetricsResponseSchema>;
 
 export const sprintAnalysisResponseSchema = z
   .object({
+    runId: z.uuid(),
     analysis: z
       .object({
         healthScore: z.number().int().min(0).max(100),
@@ -174,3 +175,32 @@ export const sprintAnalysisResponseSchema = z
 export type SprintAnalysisResponse = z.infer<
   typeof sprintAnalysisResponseSchema
 >;
+
+export const agentRunResponseSchema = z
+  .object({
+    run: z
+      .object({
+        id: z.uuid(),
+        sprintId: z.string().min(1),
+        model: z.string().min(1),
+        status: z.enum(["running", "completed", "failed"]),
+        startedAt: z.iso.datetime({ offset: true }),
+        endedAt: z.iso.datetime({ offset: true }).nullable(),
+        error: z.string().nullable(),
+        toolCalls: z.array(
+          z
+            .object({
+              step: z.number().int().positive(),
+              toolName: z.string().min(1),
+              durationMs: z.number().int().nonnegative(),
+              status: z.enum(["completed", "failed"]),
+              error: z.string().nullable(),
+            })
+            .strict(),
+        ),
+      })
+      .strict(),
+  })
+  .strict();
+
+export type AgentRunResponse = z.infer<typeof agentRunResponseSchema>;

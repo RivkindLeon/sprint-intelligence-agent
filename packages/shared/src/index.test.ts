@@ -8,6 +8,7 @@ import {
   sprintDetailResponseSchema,
   sprintMetricsResponseSchema,
   sprintAnalysisResponseSchema,
+  agentRunResponseSchema,
 } from "./index.js";
 
 describe("shared API contracts", () => {
@@ -87,6 +88,7 @@ describe("shared API contracts", () => {
 describe("sprint analysis contract", () => {
   it("requires bounded scores and evidence on every risk", () => {
     const response = {
+      runId: "123e4567-e89b-42d3-a456-426614174000",
       analysis: {
         healthScore: 68,
         summary: "A dependency threatens delivery.",
@@ -103,6 +105,13 @@ describe("sprint analysis contract", () => {
       },
     };
     assert.deepEqual(sprintAnalysisResponseSchema.parse(response), response);
+    assert.equal(
+      sprintAnalysisResponseSchema.safeParse({
+        ...response,
+        runId: "not-a-uuid",
+      }).success,
+      false,
+    );
     assert.equal(
       sprintAnalysisResponseSchema.safeParse({
         analysis: {
@@ -128,6 +137,41 @@ describe("sprint analysis contract", () => {
               evidence: [{ metric: "blockedIssueCount", value: 1 }],
             },
           ],
+        },
+      }).success,
+      false,
+    );
+  });
+});
+
+describe("agent run contract", () => {
+  it("accepts a compact trace and rejects unrecognized tool-result data", () => {
+    const response = {
+      run: {
+        id: "123e4567-e89b-42d3-a456-426614174000",
+        sprintId: "sprint-24",
+        model: "openai/test-model",
+        status: "completed",
+        startedAt: "2026-10-11T16:30:00.000Z",
+        endedAt: "2026-10-11T16:30:01.000Z",
+        error: null,
+        toolCalls: [
+          {
+            step: 1,
+            toolName: "getBlockedIssues",
+            durationMs: 21,
+            status: "completed",
+            error: null,
+          },
+        ],
+      },
+    };
+    assert.deepEqual(agentRunResponseSchema.parse(response), response);
+    assert.equal(
+      agentRunResponseSchema.safeParse({
+        run: {
+          ...response.run,
+          toolCalls: [{ ...response.run.toolCalls[0], result: { issues: [] } }],
         },
       }).success,
       false,
