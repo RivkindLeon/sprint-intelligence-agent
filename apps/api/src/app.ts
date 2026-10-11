@@ -6,6 +6,8 @@ import {
   sprintListResponseSchema,
   sprintMetricsResponseSchema,
   sprintAnalysisResponseSchema,
+  agentRunResponseSchema,
+  type AgentRunResponse,
   type SprintDetailResponse,
   type HealthResponse,
   type SprintListResponse,
@@ -21,9 +23,14 @@ export interface SprintListReader {
   ): Promise<SprintMetricsResponse["metrics"] | undefined>;
 }
 
+export interface AgentRunReader {
+  getById(id: string): Promise<AgentRunResponse["run"] | undefined>;
+}
+
 export function buildApp(
   sprintListReader: SprintListReader,
   analyzer: SprintAnalyzer,
+  runReader: AgentRunReader,
 ): FastifyInstance {
   const app = Fastify({ logger: false });
 
@@ -65,9 +72,26 @@ export function buildApp(
           }),
         );
       }
-      return sprintAnalysisResponseSchema.parse({
-        analysis: await analyzer.analyze(sprint.id),
-      });
+      return sprintAnalysisResponseSchema.parse(
+        await analyzer.analyze(sprint.id),
+      );
+    },
+  );
+
+  app.get<{ Params: { id: string } }>(
+    "/api/agent-runs/:id",
+    async (request, reply) => {
+      const run = await runReader.getById(request.params.id);
+      if (!run) {
+        return reply.code(404).send(
+          apiErrorSchema.parse({
+            statusCode: 404,
+            error: "Not Found",
+            message: "Agent run not found",
+          }),
+        );
+      }
+      return agentRunResponseSchema.parse({ run });
     },
   );
 

@@ -273,7 +273,9 @@ describe("SprintAnalysisAgent", () => {
       },
     );
 
-    await agent.analyze("sprint-24");
+    const { runId, analysis } = await agent.analyzeWithRun("sprint-24");
+    assert.equal(runId, "run-1");
+    assert.equal(analysis.healthScore, 68);
 
     assert.deepEqual(events[0], {
       type: "start",

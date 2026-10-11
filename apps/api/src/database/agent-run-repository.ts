@@ -95,4 +95,25 @@ export class AgentRunRepository implements AgentRunPersistence {
 
     return { ...run, toolCalls };
   }
+
+  async getPublicById(runId: string) {
+    const run = await this.getById(runId);
+    if (!run) return undefined;
+    return {
+      id: run.id,
+      sprintId: run.sprintId,
+      model: run.model,
+      status: run.status,
+      startedAt: run.startedAt,
+      endedAt: run.endedAt,
+      error: run.error,
+      toolCalls: run.toolCalls.map((call) => ({
+        step: call.step,
+        toolName: call.toolName,
+        durationMs: call.durationMs,
+        status: call.status,
+        error: call.error,
+      })),
+    };
+  }
 }
