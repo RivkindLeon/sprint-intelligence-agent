@@ -7,7 +7,7 @@ development job reads this file to decide what to work on next.
 sessions — each run starts with no history of previous runs. If it claims work
 that was not done, the next session builds on a lie.
 
-Last verified against the code: 2026-10-11.
+Last verified against the code: 2026-10-12.
 
 ---
 
@@ -273,8 +273,20 @@ results or hidden reasoning. Unknown runs return 404. Contract and route tests
 pass locally; PostgreSQL retrieval assertions are in CI but were not run
 locally because PostgreSQL is unavailable on this host.
 
-This is not a full dashboard yet: the dashboard UI remains unfinished. The
-retrieval response has the activity-panel fields but the panel does not exist.
+The React dashboard now loads the sprint list, selected sprint detail, and
+deterministic metrics through the shared API contracts. It shows completion,
+blocked work, scope growth, and a historical velocity chart. Running analysis
+shows the server-derived health score, severity-ordered risk cards, expandable
+issue-level evidence, and a collapsible persisted tool trace. It includes
+loading, empty, and request-error states; Vite proxies `/api` to the local API
+in development. A jsdom interaction test verifies the core load → analyze →
+evidence → activity flow and the empty-sprint state. Local build, lint,
+formatting, and non-database tests passed.
+
+Milestone 5 is still in progress: the required Playwright browser smoke test
+has not been added, and the dashboard has not yet been verified against a
+running seeded PostgreSQL API or live AI provider on this host. Docker and
+PostgreSQL are unavailable locally; CI runs the database integration suite.
 
 ## Milestone 6 — Ask the Sprint
 
@@ -289,8 +301,10 @@ retrieval response has the activity-panel fields but the panel does not exist.
 ## Where the next session should start
 
 Continue with the earliest incomplete milestone: **Milestone 5 — Dashboard**.
-Next, build the dashboard UI using the available sprint list, detail, metrics,
-analysis, and agent-run endpoints. The dashboard UI is not implemented.
+Next, add the required Playwright browser smoke flow for opening the demo
+sprint, running analysis, showing risk cards, and opening evidence. Keep it
+offline from a real LLM with a deterministic test fixture or mock. Then verify
+the dashboard against a seeded PostgreSQL API when the environment permits.
 
 ## Correction for whoever edits the job prompt
 
