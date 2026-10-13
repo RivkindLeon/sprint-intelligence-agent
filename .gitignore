@@ -2,6 +2,8 @@ node_modules/
 dist/
 *.tsbuildinfo
 .turbo/
+apps/web/test-results/
+apps/web/playwright-report/
 
 # Local configuration and private development notes
 .env
