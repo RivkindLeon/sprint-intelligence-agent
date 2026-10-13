@@ -7,7 +7,7 @@ development job reads this file to decide what to work on next.
 sessions — each run starts with no history of previous runs. If it claims work
 that was not done, the next session builds on a lie.
 
-Last verified against the code: 2026-10-12.
+Last verified against the code: 2026-10-13.
 
 ---
 
@@ -283,10 +283,16 @@ in development. A jsdom interaction test verifies the core load → analyze →
 evidence → activity flow and the empty-sprint state. Local build, lint,
 formatting, and non-database tests passed.
 
-Milestone 5 is still in progress: the required Playwright browser smoke test
-has not been added, and the dashboard has not yet been verified against a
-running seeded PostgreSQL API or live AI provider on this host. Docker and
-PostgreSQL are unavailable locally; CI runs the database integration suite.
+The required Playwright Chromium smoke test now opens the demo sprint in a
+real browser, verifies deterministic metrics, runs analysis, checks a risk
+card and health score, and expands issue-level evidence. It intercepts API
+requests with validated-shape deterministic fixtures, so no database or live
+LLM is needed. It passed locally and is included in CI with a Chromium install.
+
+Milestone 5 is still in progress: the dashboard has not yet been verified
+against a running seeded PostgreSQL API or live AI provider on this host.
+Docker and PostgreSQL are unavailable locally; CI runs the database
+integration suite.
 
 ## Milestone 6 — Ask the Sprint
 
@@ -301,10 +307,9 @@ PostgreSQL are unavailable locally; CI runs the database integration suite.
 ## Where the next session should start
 
 Continue with the earliest incomplete milestone: **Milestone 5 — Dashboard**.
-Next, add the required Playwright browser smoke flow for opening the demo
-sprint, running analysis, showing risk cards, and opening evidence. Keep it
-offline from a real LLM with a deterministic test fixture or mock. Then verify
-the dashboard against a seeded PostgreSQL API when the environment permits.
+Next, verify the dashboard against a seeded PostgreSQL API when the environment
+permits. The browser smoke flow uses an offline deterministic API fixture; it
+does not validate live provider calls.
 
 ## Correction for whoever edits the job prompt
 

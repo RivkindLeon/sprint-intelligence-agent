@@ -55,3 +55,9 @@ jobs:
 
       - name: Test
         run: pnpm test
+
+      - name: Install browser for dashboard smoke test
+        run: pnpm --filter @sprint-intelligence/web exec playwright install --with-deps chromium
+
+      - name: Dashboard browser smoke test
+        run: pnpm --filter @sprint-intelligence/web test:e2e
