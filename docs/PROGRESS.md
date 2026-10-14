@@ -7,7 +7,7 @@ development job reads this file to decide what to work on next.
 sessions — each run starts with no history of previous runs. If it claims work
 that was not done, the next session builds on a lie.
 
-Last verified against the code: 2026-10-13.
+Last verified against the code: 2026-10-14.
 
 ---
 
@@ -289,10 +289,18 @@ card and health score, and expands issue-level evidence. It intercepts API
 requests with validated-shape deterministic fixtures, so no database or live
 LLM is needed. It passed locally and is included in CI with a Chromium install.
 
-Milestone 5 is still in progress: the dashboard has not yet been verified
-against a running seeded PostgreSQL API or live AI provider on this host.
-Docker and PostgreSQL are unavailable locally; CI runs the database
-integration suite.
+A second Playwright smoke test now opens the dashboard against a running API
+and seeded PostgreSQL database without intercepting requests. It checks the
+demo sprint, 12/35 completion, blocked issue PAY-205, two scope additions,
+five historical sprints, and six team members. CI migrates and seeds its
+PostgreSQL service before this test, then starts the built API and Vite web
+server. Local lint, formatting, build, unit tests, and the fixture-backed
+browser smoke passed; this new database-backed browser test has not run locally
+because PostgreSQL is unavailable on this host. CI runs it against its
+PostgreSQL service.
+
+Milestone 5 is still in progress: the seeded browser flow covers read-only
+dashboard data, but analysis through a live AI provider has not been verified.
 
 ## Milestone 6 — Ask the Sprint
 
@@ -307,9 +315,9 @@ integration suite.
 ## Where the next session should start
 
 Continue with the earliest incomplete milestone: **Milestone 5 — Dashboard**.
-Next, verify the dashboard against a seeded PostgreSQL API when the environment
-permits. The browser smoke flow uses an offline deterministic API fixture; it
-does not validate live provider calls.
+Verify the analysis flow against a live AI provider when credentials and a
+running seeded API are available. Neither browser smoke test validates live
+provider calls.
 
 ## Correction for whoever edits the job prompt
 

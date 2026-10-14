@@ -59,5 +59,12 @@ jobs:
       - name: Install browser for dashboard smoke test
         run: pnpm --filter @sprint-intelligence/web exec playwright install --with-deps chromium
 
+      - name: Migrate and seed dashboard database
+        run: |
+          pnpm --filter @sprint-intelligence/api db:migrate
+          pnpm --filter @sprint-intelligence/api db:seed
+
       - name: Dashboard browser smoke test
+        env:
+          RUN_SEEDED_DASHBOARD_TEST: "true"
         run: pnpm --filter @sprint-intelligence/web test:e2e
