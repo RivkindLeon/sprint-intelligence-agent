@@ -27,6 +27,10 @@ test("loads the seeded sprint and deterministic metrics from the running API", a
   expect(await directList.json()).toEqual({
     sprints: [expect.objectContaining({ id: "sprint-24" })],
   });
+  const detail = await page.request.get("/api/sprints/sprint-24");
+  const metrics = await page.request.get("/api/sprints/sprint-24/metrics");
+  expect(detail.status(), await detail.text()).toBe(200);
+  expect(metrics.status(), await metrics.text()).toBe(200);
   await page.goto("/");
 
   await expect(page.getByRole("heading", { name: "Sprint 24" })).toBeVisible();
