@@ -297,7 +297,11 @@ PostgreSQL service before this test, then starts the built API and Vite web
 server. Local lint, formatting, build, unit tests, and the fixture-backed
 browser smoke passed; this new database-backed browser test has not run locally
 because PostgreSQL is unavailable on this host. CI runs it against its
-PostgreSQL service.
+PostgreSQL service. The first CI run exposed a real sprint-detail failure:
+PostgreSQL's timestamp string did not satisfy the shared ISO datetime
+contract. The sprint repository now normalizes issue update times to ISO
+before returning them, and the seeded database integration test checks both
+detail and metrics against their shared contracts.
 
 Milestone 5 is still in progress: the seeded browser flow covers read-only
 dashboard data, but analysis through a live AI provider has not been verified.

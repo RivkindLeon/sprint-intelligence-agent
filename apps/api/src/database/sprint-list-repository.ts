@@ -107,6 +107,7 @@ export class SprintListRepository {
       developers: team,
       issues: sprintIssues.map((issue) => ({
         ...issue,
+        updatedAt: new Date(issue.updatedAt).toISOString(),
         dependencies: dependenciesByIssue.get(issue.id) ?? [],
       })),
     };
