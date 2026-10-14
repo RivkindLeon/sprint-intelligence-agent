@@ -17,6 +17,10 @@ test("loads the seeded sprint and deterministic metrics from the running API", a
     }
   });
 
+  expect(
+    (await page.request.get("http://127.0.0.1:3000/api/sprints")).status(),
+  ).toBe(200);
+  expect((await page.request.get("/api/sprints")).status()).toBe(200);
   await page.goto("/");
 
   await expect(page.getByRole("heading", { name: "Sprint 24" })).toBeVisible();
