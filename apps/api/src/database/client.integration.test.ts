@@ -3,6 +3,10 @@ import { describe, it } from "node:test";
 
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import { eq } from "drizzle-orm";
+import {
+  sprintDetailResponseSchema,
+  sprintMetricsResponseSchema,
+} from "@sprint-intelligence/shared";
 
 import { createSprintAnalyzer } from "../analysis-service.js";
 
@@ -104,6 +108,9 @@ describe("database connection", { skip: !runDatabaseIntegrationTest }, () => {
       assert.equal(sprintDetail?.goal, dataset.sprint.goal);
       assert.equal(sprintDetail?.developers.length, 6);
       assert.equal(sprintDetail?.issues.length, 35);
+      assert.ok(
+        sprintDetailResponseSchema.safeParse({ sprint: sprintDetail }).success,
+      );
       for (const issue of dataset.issues) {
         assert.deepEqual(
           sprintDetail?.issues.find((item) => item.id === issue.id)
@@ -118,6 +125,7 @@ describe("database connection", { skip: !runDatabaseIntegrationTest }, () => {
       const metrics = await new SprintListRepository(db).getMetricsById(
         dataset.sprint.id,
       );
+      assert.ok(sprintMetricsResponseSchema.safeParse({ metrics }).success);
       assert.equal(metrics?.completion.totalIssues, 35);
       assert.equal(
         metrics?.completion.completedIssues,
