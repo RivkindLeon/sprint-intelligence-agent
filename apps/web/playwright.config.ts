@@ -7,7 +7,8 @@ export default defineConfig({
     baseURL: "http://127.0.0.1:4173",
   },
   webServer: [
-    ...(process.env.RUN_SEEDED_DASHBOARD_TEST === "true"
+    ...(process.env.RUN_SEEDED_DASHBOARD_TEST === "true" ||
+    process.env.RUN_LIVE_AI_DASHBOARD_TEST === "true"
       ? [
           {
             command: "pnpm --filter @sprint-intelligence/api start",

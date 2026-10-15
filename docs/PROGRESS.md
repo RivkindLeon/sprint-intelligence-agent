@@ -7,7 +7,7 @@ development job reads this file to decide what to work on next.
 sessions — each run starts with no history of previous runs. If it claims work
 that was not done, the next session builds on a lie.
 
-Last verified against the code: 2026-10-14.
+Last verified against the code: 2026-10-15.
 
 ---
 
@@ -303,6 +303,18 @@ contract. The sprint repository now normalizes issue update times to ISO
 before returning them, and the seeded database integration test checks both
 detail and metrics against their shared contracts.
 
+An opt-in Playwright smoke test now exercises the real AI-provider path through
+the seeded dashboard and API. It validates the analysis contract, requires at
+least one risk with exact issue IDs from the seeded sprint, checks the
+persisted completed tool trace, and verifies health, evidence, and activity in
+the browser. It is excluded from ordinary CI because it needs live provider
+credentials and PostgreSQL. After migrating and seeding the database, set
+`DATABASE_URL`, `AI_PROVIDER`, `AI_MODEL`, `AI_API_KEY`, and
+`RUN_LIVE_AI_DASHBOARD_TEST=true`, then run
+`pnpm --filter @sprint-intelligence/web exec playwright test e2e/live-provider-dashboard.spec.ts`.
+The new test was parsed/listed and statically checked; it was **not executed**
+against a live provider because this host has no AI credentials or PostgreSQL.
+
 Milestone 5 is still in progress: the seeded browser flow covers read-only
 dashboard data, but analysis through a live AI provider has not been verified.
 
@@ -319,9 +331,10 @@ dashboard data, but analysis through a live AI provider has not been verified.
 ## Where the next session should start
 
 Continue with the earliest incomplete milestone: **Milestone 5 — Dashboard**.
-Verify the analysis flow against a live AI provider when credentials and a
-running seeded API are available. Neither browser smoke test validates live
-provider calls.
+Run the opt-in live-provider dashboard smoke against a migrated, seeded
+PostgreSQL API when credentials are available. If it fails, repair the actual
+provider/agent integration on the same milestone; do not mark Milestone 5
+complete based only on fixture or fake-model tests.
 
 ## Correction for whoever edits the job prompt
 
