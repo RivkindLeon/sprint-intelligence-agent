@@ -7,7 +7,7 @@ development job reads this file to decide what to work on next.
 sessions — each run starts with no history of previous runs. If it claims work
 that was not done, the next session builds on a lie.
 
-Last verified against the code: 2026-10-15.
+Last verified against the code: 2026-10-16.
 
 ---
 
@@ -314,6 +314,14 @@ credentials and PostgreSQL. After migrating and seeding the database, set
 `pnpm --filter @sprint-intelligence/web exec playwright test e2e/live-provider-dashboard.spec.ts`.
 The new test was parsed/listed and statically checked; it was **not executed**
 against a live provider because this host has no AI credentials or PostgreSQL.
+
+The AI SDK integration is now exercised without network access by a test that
+uses the real `generateText` path with a mock language model, rather than
+replacing `generateText` itself. It runs the bounded agent through a tool call,
+validated tool output, a structured final response, and issue-level evidence;
+it also verifies that the second model request contains the prior tool result.
+This test passed locally. It does **not** establish that the OpenAI service
+accepts the live request or produces a valid analysis.
 
 Milestone 5 is still in progress: the seeded browser flow covers read-only
 dashboard data, but analysis through a live AI provider has not been verified.
