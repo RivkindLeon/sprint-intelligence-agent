@@ -7,7 +7,7 @@ development job reads this file to decide what to work on next.
 sessions — each run starts with no history of previous runs. If it claims work
 that was not done, the next session builds on a lie.
 
-Last verified against the code: 2026-10-16.
+Last verified against the code: 2026-10-17.
 
 ---
 
@@ -322,6 +322,13 @@ validated tool output, a structured final response, and issue-level evidence;
 it also verifies that the second model request contains the prior tool result.
 This test passed locally. It does **not** establish that the OpenAI service
 accepts the live request or produces a valid analysis.
+
+The demo seed loader now shifts the checked-in sprint, issue, activity, and
+history dates together so each fresh seed places the synthetic sprint on day
+ten. This keeps the dashboard's days-remaining value and stale-work evidence
+representative as calendar time passes, without changing issue IDs, statuses,
+dependencies, or estimates. The date-shift tests passed locally. PostgreSQL
+seed and dashboard integration remain CI-only on this host.
 
 Milestone 5 is still in progress: the seeded browser flow covers read-only
 dashboard data, but analysis through a live AI provider has not been verified.

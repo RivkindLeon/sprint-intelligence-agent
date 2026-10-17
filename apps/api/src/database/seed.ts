@@ -35,7 +35,13 @@ async function readJson<T>(name: string): Promise<T> {
   return JSON.parse(await readFile(file, "utf8")) as T;
 }
 
-export async function loadDemoDataset(): Promise<DemoDataset> {
+const TEMPLATE_REFERENCE_DATE = Date.parse("2026-09-10T00:00:00Z");
+const DAY_MS = 86_400_000;
+
+/** Keep the synthetic sprint on day ten when seeded, without changing its signals. */
+export async function loadDemoDataset(
+  referenceDate: Date = new Date(),
+): Promise<DemoDataset> {
   const [sprint, demoDevelopers, history, demoIssues] = await Promise.all([
     readJson<DemoSprint>("sprint.json"),
     readJson<DemoDeveloper[]>("developers.json"),
@@ -43,7 +49,39 @@ export async function loadDemoDataset(): Promise<DemoDataset> {
     readJson<DemoIssue[]>("issues.json"),
   ]);
 
-  return { sprint, developers: demoDevelopers, history, issues: demoIssues };
+  if (Number.isNaN(referenceDate.getTime())) {
+    throw new Error("Demo reference date must be valid");
+  }
+  const offsetMs =
+    (Math.floor(referenceDate.getTime() / DAY_MS) -
+      Math.floor(TEMPLATE_REFERENCE_DATE / DAY_MS)) *
+    DAY_MS;
+  const shiftTimestamp = (value: string): string =>
+    new Date(Date.parse(value) + offsetMs).toISOString();
+  const shiftDate = (value: string): string =>
+    shiftTimestamp(value).slice(0, 10);
+
+  return {
+    sprint: {
+      ...sprint,
+      startDate: shiftDate(sprint.startDate),
+      endDate: shiftDate(sprint.endDate),
+    },
+    developers: demoDevelopers,
+    history: history.map((item) => ({
+      ...item,
+      startedAt: shiftTimestamp(item.startedAt),
+      completedAt: shiftTimestamp(item.completedAt),
+    })),
+    issues: demoIssues.map((issue) => ({
+      ...issue,
+      createdAt: shiftTimestamp(issue.createdAt),
+      updatedAt: shiftTimestamp(issue.updatedAt),
+      addedToSprintAt: issue.addedToSprintAt
+        ? shiftTimestamp(issue.addedToSprintAt)
+        : undefined,
+    })),
+  };
 }
 
 export async function seedDemoDataset(
