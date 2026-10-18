@@ -76,6 +76,7 @@ export const sprintMetricsResponseSchema = z
     metrics: z
       .object({
         sprintId: z.string().min(1),
+        healthScore: z.number().int().min(0).max(100),
         completion: z
           .object({
             totalIssues: z.number().int().nonnegative(),

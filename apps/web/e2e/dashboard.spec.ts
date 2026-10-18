@@ -41,6 +41,7 @@ test("opens the demo sprint and reveals issue evidence for an analyzed risk", as
     "/api/sprints/sprint-24/metrics": {
       metrics: {
         sprintId: "sprint-24",
+        healthScore: 68,
         completion: {
           totalIssues: 10,
           completedIssues: 6,
@@ -120,6 +121,7 @@ test("opens the demo sprint and reveals issue evidence for an analyzed risk", as
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Sprint 24" })).toBeVisible();
   await expect(page.getByText("6 / 10").first()).toBeVisible();
+  await expect(page.getByLabel("Sprint health score")).toHaveText("68 / 100");
   await page.getByRole("button", { name: "Analyze Sprint" }).click();
 
   await expect(

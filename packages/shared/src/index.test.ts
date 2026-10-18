@@ -184,6 +184,7 @@ describe("sprint metrics contract", () => {
     const response = {
       metrics: {
         sprintId: "sprint-24",
+        healthScore: 68,
         completion: {
           totalIssues: 2,
           completedIssues: 1,
@@ -209,6 +210,12 @@ describe("sprint metrics contract", () => {
       },
     };
     assert.deepEqual(sprintMetricsResponseSchema.parse(response), response);
+    assert.equal(
+      sprintMetricsResponseSchema.safeParse({
+        metrics: { ...response.metrics, healthScore: 101 },
+      }).success,
+      false,
+    );
     assert.equal(
       sprintMetricsResponseSchema.safeParse({
         metrics: {

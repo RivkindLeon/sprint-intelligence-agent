@@ -115,7 +115,9 @@ export class SprintListRepository {
 
   async getMetricsById(
     id: string,
-  ): Promise<SprintMetricsResponse["metrics"] | undefined> {
+  ): Promise<
+    Omit<SprintMetricsResponse["metrics"], "healthScore"> | undefined
+  > {
     const detail = await this.getById(id);
     if (!detail) return undefined;
 
