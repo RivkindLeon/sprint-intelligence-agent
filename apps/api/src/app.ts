@@ -14,13 +14,14 @@ import {
   type SprintMetricsResponse,
 } from "@sprint-intelligence/shared";
 import type { SprintAnalyzer } from "./analysis-service.js";
+import type { SprintHealthScoreSource } from "@sprint-intelligence/ai";
 
 export interface SprintListReader {
   list(): Promise<SprintListResponse["sprints"]>;
   getById(id: string): Promise<SprintDetailResponse["sprint"] | undefined>;
   getMetricsById(
     id: string,
-  ): Promise<SprintMetricsResponse["metrics"] | undefined>;
+  ): Promise<Omit<SprintMetricsResponse["metrics"], "healthScore"> | undefined>;
 }
 
 export interface AgentRunReader {
@@ -31,6 +32,7 @@ export function buildApp(
   sprintListReader: SprintListReader,
   analyzer: SprintAnalyzer,
   runReader: AgentRunReader,
+  healthSource: SprintHealthScoreSource,
 ): FastifyInstance {
   const app = Fastify({ logger: false });
 
@@ -108,7 +110,11 @@ export function buildApp(
           }),
         );
       }
-      return sprintMetricsResponseSchema.parse({ metrics });
+      const healthScore = (await healthSource.calculate(request.params.id))
+        .score;
+      return sprintMetricsResponseSchema.parse({
+        metrics: { ...metrics, healthScore },
+      });
     },
   );
 

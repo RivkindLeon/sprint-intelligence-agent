@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { sprintMetricsResponseSchema } from "@sprint-intelligence/shared";
 
 test.skip(
   process.env.RUN_SEEDED_DASHBOARD_TEST !== "true",
@@ -31,9 +32,16 @@ test("loads the seeded sprint and deterministic metrics from the running API", a
   const metrics = await page.request.get("/api/sprints/sprint-24/metrics");
   expect(detail.status(), await detail.text()).toBe(200);
   expect(metrics.status(), await metrics.text()).toBe(200);
+  const healthScore = sprintMetricsResponseSchema.parse(await metrics.json())
+    .metrics.healthScore;
+  expect(healthScore).toBeGreaterThanOrEqual(0);
+  expect(healthScore).toBeLessThanOrEqual(100);
   await page.goto("/");
 
   await expect(page.getByRole("heading", { name: "Sprint 24" })).toBeVisible();
+  await expect(page.getByLabel("Sprint health score")).toHaveText(
+    `${healthScore} / 100`,
+  );
   await expect(page.getByText("12 / 35").first()).toBeVisible();
   await expect(page.getByText("PAY-205")).toBeVisible();
   await expect(page.getByText("+2 issues")).toBeVisible();

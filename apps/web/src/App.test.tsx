@@ -64,6 +64,7 @@ beforeEach(() => {
   vi.mocked(api.getMetrics).mockResolvedValue({
     metrics: {
       sprintId: sprint.id,
+      healthScore: 68,
       completion: {
         totalIssues: 10,
         completedIssues: 6,
@@ -137,7 +138,7 @@ describe("dashboard", () => {
     ).toBeInTheDocument();
     expect((await screen.findAllByText("6 / 10")).length).toBe(2);
     expect(screen.getByText("+2 issues")).toBeInTheDocument();
-    expect(screen.getByText("— / 100")).toBeInTheDocument();
+    expect(screen.getAllByText("68 / 100").length).toBe(2);
 
     fireEvent.click(screen.getByRole("button", { name: "Analyze Sprint" }));
     expect(

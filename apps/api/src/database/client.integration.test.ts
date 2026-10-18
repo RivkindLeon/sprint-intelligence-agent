@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import { eq } from "drizzle-orm";
+import { createSprintHealthScoreSource } from "@sprint-intelligence/ai";
 import {
   sprintDetailResponseSchema,
   sprintMetricsResponseSchema,
@@ -125,7 +126,17 @@ describe("database connection", { skip: !runDatabaseIntegrationTest }, () => {
       const metrics = await new SprintListRepository(db).getMetricsById(
         dataset.sprint.id,
       );
-      assert.ok(sprintMetricsResponseSchema.safeParse({ metrics }).success);
+      assert.ok(metrics);
+      const healthScore = (
+        await createSprintHealthScoreSource(
+          new SprintAnalysisRepository(db),
+        ).calculate(dataset.sprint.id)
+      ).score;
+      assert.ok(
+        sprintMetricsResponseSchema.safeParse({
+          metrics: { ...metrics, healthScore },
+        }).success,
+      );
       assert.equal(metrics?.completion.totalIssues, 35);
       assert.equal(
         metrics?.completion.completedIssues,

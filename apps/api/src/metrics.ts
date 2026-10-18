@@ -18,7 +18,7 @@ export function calculateSprintMetrics(
   detail: SprintDetail,
   activities: Activity[],
   history: SprintHistory[],
-): SprintMetricsResponse["metrics"] {
+): Omit<SprintMetricsResponse["metrics"], "healthScore"> {
   const completed = detail.issues.filter((issue) => issue.status === "done");
   const blocked = detail.issues.filter((issue) => issue.status === "blocked");
   const totalStoryPoints = detail.issues.reduce(

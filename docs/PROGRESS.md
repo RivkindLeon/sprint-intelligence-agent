@@ -7,7 +7,7 @@ development job reads this file to decide what to work on next.
 sessions — each run starts with no history of previous runs. If it claims work
 that was not done, the next session builds on a lie.
 
-Last verified against the code: 2026-10-17.
+Last verified against the code: 2026-10-18.
 
 ---
 
@@ -330,8 +330,18 @@ representative as calendar time passes, without changing issue IDs, statuses,
 dependencies, or estimates. The date-shift tests passed locally. PostgreSQL
 seed and dashboard integration remain CI-only on this host.
 
+The metrics endpoint now returns the existing deterministic health score, so
+the dashboard shows it immediately with completion and velocity data, before
+any AI call and even when no AI credentials are configured. The analysis path
+still calculates the same score through the same repository-backed source.
+The shared contract bounds it to an integer from 0 to 100; route, contract,
+dashboard interaction, and fixture-backed Chromium smoke tests passed locally.
+The seeded PostgreSQL/browser assertions are in CI and have not run locally.
+
 Milestone 5 is still in progress: the seeded browser flow covers read-only
-dashboard data, but analysis through a live AI provider has not been verified.
+dashboard data including health, but analysis through a live AI provider has
+not been verified. No AI credentials are available in this environment,
+GitHub Actions secrets, or the OpenClaw secret store.
 
 ## Milestone 6 — Ask the Sprint
 

@@ -121,6 +121,12 @@ const app = buildApp(
       };
     },
   },
+  {
+    async calculate(sprintId) {
+      assert.equal(sprintId, "sprint-24");
+      return { score: 68, penalties: [], totalPenalty: 32 };
+    },
+  },
 );
 
 describe("sprint analysis endpoint", () => {
@@ -197,6 +203,7 @@ describe("sprint metrics endpoint", () => {
     });
     assert.equal(response.statusCode, 200);
     const { metrics } = sprintMetricsResponseSchema.parse(response.json());
+    assert.equal(metrics.healthScore, 68);
     assert.equal(metrics.completion.totalStoryPoints, 5);
     assert.deepEqual(metrics.blocked.issueIds, ["AUTH-231"]);
   });

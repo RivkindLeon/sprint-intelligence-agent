@@ -3,6 +3,7 @@ import {
   agentRunResponseSchema,
   sprintAnalysisResponseSchema,
   sprintDetailResponseSchema,
+  sprintMetricsResponseSchema,
 } from "@sprint-intelligence/shared";
 
 test.skip(
@@ -29,6 +30,13 @@ test("analyzes the seeded sprint with a live provider and shows its evidence and
   const { sprint } = sprintDetailResponseSchema.parse(
     await detailResponse.json(),
   );
+  const metricsResponse = await page.request.get(
+    "/api/sprints/sprint-24/metrics",
+  );
+  expect(metricsResponse.status(), await metricsResponse.text()).toBe(200);
+  const deterministicScore = sprintMetricsResponseSchema.parse(
+    await metricsResponse.json(),
+  ).metrics.healthScore;
   expect(sprint.issues).toHaveLength(35);
   const knownIssueIds = new Set(sprint.issues.map((issue) => issue.id));
 
@@ -47,6 +55,7 @@ test("analyzes the seeded sprint with a live provider and shows its evidence and
   const { runId, analysis } = sprintAnalysisResponseSchema.parse(
     await analysisResponse.json(),
   );
+  expect(analysis.healthScore).toBe(deterministicScore);
 
   expect(analysis.risks.length).toBeGreaterThan(0);
   for (const risk of analysis.risks) {

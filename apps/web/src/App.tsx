@@ -342,9 +342,7 @@ export function App() {
               <div className="quick-stats">
                 <div>
                   <span>Health score</span>
-                  <strong>
-                    {currentAnalysis?.analysis.healthScore ?? "—"} / 100
-                  </strong>
+                  <strong>{metrics.data.metrics.healthScore} / 100</strong>
                 </div>
                 <div>
                   <span>Days remaining</span>
@@ -365,7 +363,7 @@ export function App() {
               <div className="dashboard-grid">
                 <SprintHealth
                   metrics={metrics.data.metrics}
-                  healthScore={currentAnalysis?.analysis.healthScore}
+                  healthScore={metrics.data.metrics.healthScore}
                 />
                 {currentAnalysis ? (
                   <Analysis
