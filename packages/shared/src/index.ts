@@ -177,6 +177,34 @@ export type SprintAnalysisResponse = z.infer<
   typeof sprintAnalysisResponseSchema
 >;
 
+export const sprintChatRequestSchema = z
+  .object({
+    question: z.string().trim().min(1).max(500),
+  })
+  .strict();
+
+export type SprintChatRequest = z.infer<typeof sprintChatRequestSchema>;
+
+export const sprintChatResponseSchema = z
+  .object({
+    runId: z.uuid(),
+    answer: z.string().trim().min(1),
+    evidence: z
+      .array(
+        z
+          .object({
+            issueId: z.string().trim().min(1),
+            metric: z.string().trim().min(1).optional(),
+            value: z.union([z.string(), z.number().finite()]).optional(),
+          })
+          .strict(),
+      )
+      .min(1),
+  })
+  .strict();
+
+export type SprintChatResponse = z.infer<typeof sprintChatResponseSchema>;
+
 export const agentRunResponseSchema = z
   .object({
     run: z

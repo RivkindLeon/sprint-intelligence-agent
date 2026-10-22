@@ -8,6 +8,8 @@ import {
   sprintDetailResponseSchema,
   sprintMetricsResponseSchema,
   sprintAnalysisResponseSchema,
+  sprintChatRequestSchema,
+  sprintChatResponseSchema,
   agentRunResponseSchema,
 } from "./index.js";
 
@@ -79,6 +81,55 @@ describe("shared API contracts", () => {
           ...response.sprint,
           issues: [{ ...response.sprint.issues[0], dependencies: [5] }],
         },
+      }).success,
+      false,
+    );
+  });
+});
+
+describe("Ask the Sprint contract", () => {
+  it("normalizes a bounded question and rejects unknown input", () => {
+    assert.deepEqual(
+      sprintChatRequestSchema.parse({ question: "  Who is overloaded?  " }),
+      { question: "Who is overloaded?" },
+    );
+    for (const question of ["   ", "x".repeat(501)]) {
+      assert.equal(
+        sprintChatRequestSchema.safeParse({ question }).success,
+        false,
+      );
+    }
+    assert.equal(
+      sprintChatRequestSchema.safeParse({
+        question: "Who is overloaded?",
+        sprintId: "different-sprint",
+      }).success,
+      false,
+    );
+  });
+
+  it("requires a traceable issue citation for an answer", () => {
+    const response = {
+      runId: "123e4567-e89b-42d3-a456-426614174000",
+      answer: "AUTH-231 is blocked by AUTH-198.",
+      evidence: [{ issueId: "AUTH-231" }, { issueId: "AUTH-198" }],
+    };
+    assert.deepEqual(sprintChatResponseSchema.parse(response), response);
+    assert.equal(
+      sprintChatResponseSchema.safeParse({ ...response, evidence: [] }).success,
+      false,
+    );
+    assert.equal(
+      sprintChatResponseSchema.safeParse({
+        ...response,
+        evidence: [{ metric: "blockedIssueCount", value: 1 }],
+      }).success,
+      false,
+    );
+    assert.equal(
+      sprintChatResponseSchema.safeParse({
+        ...response,
+        evidence: [{ issueId: "AUTH-231", rawToolResult: {} }],
       }).success,
       false,
     );

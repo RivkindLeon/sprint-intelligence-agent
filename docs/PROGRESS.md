@@ -345,14 +345,26 @@ The shared contract bounds it to an integer from 0 to 100; route, contract,
 dashboard interaction, and fixture-backed Chromium smoke tests passed locally.
 The seeded PostgreSQL/browser assertions are in CI and have not run locally.
 
-Milestone 5 is still in progress: the seeded browser flow covers read-only
-dashboard data including health, but analysis through a live AI provider has
-not been verified. No AI credentials are available in this environment,
-GitHub Actions secrets, or the OpenClaw secret store.
+At the time of the owner decision, the seeded browser flow covered read-only
+dashboard data including health, but analysis through a live AI provider had
+not been verified. No AI credentials were available in this environment,
+GitHub Actions secrets, or the OpenClaw secret store. This remains unverified;
+Milestone 5 is skipped, not complete.
 
 ## Milestone 6 — Ask the Sprint
 
-**Status: not started.**
+**Status: in progress.** The shared package now defines strict, tested
+`SprintChatRequest` and `SprintChatResponse` contracts for Ask the Sprint. The
+request requires a trimmed, bounded question and rejects extra fields. The
+response requires a persisted run ID, nonempty answer, and at least one exact
+issue citation; optional metric evidence cannot replace an issue citation.
+Shared TypeScript build, contract tests, ESLint, and Prettier checks passed
+locally.
+
+No chat endpoint, question-aware agent behavior, or frontend interface exists
+yet. The contract alone does not verify evidence provenance or make an LLM
+call. The next piece should reuse the existing bounded tool loop for answering
+questions with validated evidence, not create a second unrelated agent.
 
 ## Milestone 7 — Documentation
 
@@ -365,6 +377,8 @@ GitHub Actions secrets, or the OpenClaw secret store.
 Continue with the earliest incomplete milestone: **Milestone 6 — Ask the Sprint**.
 Milestone 5 was skipped by the project owner on 2026-10-22 (no AI credentials or
 PostgreSQL will be provided); do not work on it.
+Next, implement question-aware agent behavior using the existing tool layer and
+the new chat contract. The API route and UI are still missing.
 
 ## Correction for whoever edits the job prompt
 
