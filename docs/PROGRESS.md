@@ -234,7 +234,14 @@ provider, persistence, and end-to-end synthetic-sprint coverage.
 
 ## Milestone 5 — Dashboard
 
-**Status: in progress.** The API now exposes `GET /api/sprints` through a
+**Status: skipped 2026-10-22 by Leon (project owner).** The remaining step — the
+live-provider dashboard smoke — needs AI credentials and a PostgreSQL service
+that will not be provided: the project is being wound down. This is an owner
+decision, not a claim that the work below is finished; do not reopen Milestone 5
+and do not mark it complete. The notes below describe the state at the time of
+skipping.
+
+Previously: **in progress.** The API now exposes `GET /api/sprints` through a
 PostgreSQL-backed repository and a strict shared response contract. It returns
 compact sprint identifiers, names, and dates in newest-first order. The shared
 contract and Fastify route pass local tests; a seeded PostgreSQL integration
@@ -355,11 +362,9 @@ GitHub Actions secrets, or the OpenClaw secret store.
 
 ## Where the next session should start
 
-Continue with the earliest incomplete milestone: **Milestone 5 — Dashboard**.
-Run the opt-in live-provider dashboard smoke against a migrated, seeded
-PostgreSQL API when credentials are available. If it fails, repair the actual
-provider/agent integration on the same milestone; do not mark Milestone 5
-complete based only on fixture or fake-model tests.
+Continue with the earliest incomplete milestone: **Milestone 6 — Ask the Sprint**.
+Milestone 5 was skipped by the project owner on 2026-10-22 (no AI credentials or
+PostgreSQL will be provided); do not work on it.
 
 ## Correction for whoever edits the job prompt
 
